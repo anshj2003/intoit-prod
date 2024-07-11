@@ -26,14 +26,19 @@ REDIRECT_URI = os.getenv('REDIRECT_URI')
 
 OPENAI_KEY = os.getenv('OPENAI_KEY')
 
+HOST = os.getenv('OPENAI_KEY')
+DATABASE = os.getenv('DATABASE')
+USER = os.getenv('USER')
+PASSWORD = os.getenv('PASSWORD')
+
 
 
 def get_db_connection():
     conn = psycopg2.connect(
-        host="localhost",
-        database="nightlife",
-        user="postgres",
-        password="Anshtheboss1"
+        host=HOST,
+        database=DATABASE,
+        user=USER,
+        password=PASSWORD
     )
     return conn
 
