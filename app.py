@@ -26,7 +26,7 @@ REDIRECT_URI = os.getenv('REDIRECT_URI')
 
 OPENAI_KEY = os.getenv('OPENAI_KEY')
 
-HOST = os.getenv('OPENAI_KEY')
+HOST = os.getenv('HOST')
 DATABASE = os.getenv('DATABASE')
 USER = os.getenv('USER')
 PASSWORD = os.getenv('PASSWORD')
