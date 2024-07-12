@@ -28,7 +28,7 @@ OPENAI_KEY = os.getenv('OPENAI_KEY')
 
 HOST = os.getenv('HOST')
 DATABASE = os.getenv('DATABASE')
-USER = os.getenv('USER')
+DB_USER = os.getenv('DB_USER')
 PASSWORD = os.getenv('PASSWORD')
 
 print("HOST:", os.getenv("HOST"))
