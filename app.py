@@ -169,6 +169,34 @@ def update_bar():
 
 
 
+# USERNAME VALIDATION AND SETTING
+
+@app.route('/check_username', methods=['POST'])
+def check_username():
+    data = request.json
+    username = data.get('username')
+
+    if not username:
+        return jsonify({'status': 'Username is required'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('SELECT * FROM users WHERE username = %s', (username,))
+    existing_user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if existing_user:
+        return jsonify({'status': 'Username is already taken'}), 400
+    else:
+        return jsonify({'status': 'Username is available'}), 200
+
+
+
+
+
 
 
 
@@ -490,11 +518,12 @@ def update_user():
     gender = data.get('gender')
     relationship_status = data.get('relationship_status')
     location = data.get('location')
+    username = data.get('username')
 
     if not email:
         return jsonify({'status': 'Email is required'}), 400
     
-    print(f"Received data for update: email={email}, birthday={birthday}, gender={gender}, relationship_status={relationship_status}, location={location}")
+    print(f"Received data for update: email={email}, birthday={birthday}, gender={gender}, relationship_status={relationship_status}, location={location}, username={username}")
     
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -515,6 +544,9 @@ def update_user():
     if location:
         updates.append('location = %s')
         params.append(location)
+    if username:
+        updates.append('username = %s')
+        params.append(username)
 
     if not updates:
         return jsonify({'status': 'No fields to update'}), 400
@@ -529,6 +561,7 @@ def update_user():
     cursor.close()
     conn.close()
     return jsonify({'status': 'User information updated successfully!'}), 200
+
 
 
 
@@ -1152,4 +1185,4 @@ def get_feedback(email):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
