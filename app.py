@@ -31,6 +31,10 @@ DATABASE = os.getenv('DATABASE')
 USER = os.getenv('USER')
 PASSWORD = os.getenv('PASSWORD')
 
+print("HOST:", os.getenv("HOST"))
+print("DATABASE:", os.getenv("DATABASE"))
+print("USER:", os.getenv("USER"))
+print("PASSWORD:", os.getenv("PASSWORD"))
 
 
 def get_db_connection():
