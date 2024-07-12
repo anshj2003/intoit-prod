@@ -68,7 +68,7 @@ def ai_search():
         conn.close()
         return jsonify({'error': 'User not found'}), 404
 
-    location = result[0]
+    location = "new york"'''result[0]'''
     print(f"User's location: {location}")
 
     # Combine query and location
@@ -1095,5 +1095,61 @@ def update_phone_number(bar_id):
 
 
 
+
+
+
+# FEED VIEW FEEDBACK
+
+@app.route('/api/feedback', methods=['POST'])
+def submit_feedback():
+    data = request.json
+    email = data.get('email')
+    feedback = data.get('feedback')
+    comment = data.get('comment')
+
+    if not email or feedback not in ['yes', 'neutral', 'no']:
+        return jsonify({'error': 'Invalid input'}), 400
+
+    yes = 1 if feedback == 'yes' else 0
+    neutral = 1 if feedback == 'neutral' else 0
+    no = 1 if feedback == 'no' else 0
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT INTO user_feedback (user_email, yes, neutral, no, comment)
+        VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (user_email) 
+        DO UPDATE SET 
+            yes = EXCLUDED.yes,
+            neutral = EXCLUDED.neutral,
+            no = EXCLUDED.no,
+            comment = EXCLUDED.comment,
+            created_at = CURRENT_TIMESTAMP
+    ''', (email, yes, neutral, no, comment))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'Feedback submitted successfully'}), 200
+
+@app.route('/api/feedback/<email>', methods=['GET'])
+def get_feedback(email):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute('SELECT * FROM user_feedback WHERE user_email = %s', (email,))
+    feedback = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if feedback:
+        return jsonify(feedback)
+    return jsonify({'error': 'Feedback not found'}), 404
+
+
+
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
