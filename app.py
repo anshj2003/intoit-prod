@@ -68,7 +68,7 @@ def ai_search():
         conn.close()
         return jsonify({'error': 'User not found'}), 404
 
-    location = "new york"'''result[0]'''
+    location = result[0]
     print(f"User's location: {location}")
 
     # Combine query and location
@@ -83,7 +83,7 @@ def ai_search():
         model="gpt-4o",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Based on the following query, suggest some bars near the user. Say only the names of the establishments that you recommend. Format should be 'bar1, bar2, bar3'. No additional punctuation: {combined_query}"}
+            {"role": "user", "content": f"Based on the following query, suggest a bar near the user. Say only the name of the establishment that you recommend. Format should be 'bar', no additional punctuation: {combined_query}"}
         ],
         max_tokens=150
     )
