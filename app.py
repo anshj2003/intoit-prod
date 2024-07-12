@@ -33,7 +33,7 @@ PASSWORD = os.getenv('PASSWORD')
 
 print("HOST:", os.getenv("HOST"))
 print("DATABASE:", os.getenv("DATABASE"))
-print("USER:", os.getenv("USER"))
+print("DB_USER:", os.getenv("DB_USER"))
 print("PASSWORD:", os.getenv("PASSWORD"))
 
 
@@ -41,7 +41,7 @@ def get_db_connection():
     conn = psycopg2.connect(
         host=HOST,
         database=DATABASE,
-        user=USER,
+        user=DB_USER,
         password=PASSWORD
     )
     return conn
