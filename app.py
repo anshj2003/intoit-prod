@@ -874,7 +874,7 @@ def downvote_song_request(request_id):
 
 # BEEN THERE, LIKED, WANT TO GO
 
-from psycopg2.extras import RealDictCursor
+
 
 @app.route('/add_to_list', methods=['POST'])
 def add_to_list():
@@ -900,6 +900,30 @@ def add_to_list():
 
     user_id = user['id']
 
+    # Check if the bar already exists in the list
+    if list_type == 'been_there':
+        cursor.execute(
+            'SELECT * FROM been_there WHERE user_id = %s AND bar_id = %s',
+            (user_id, bar_id)
+        )
+    elif list_type == 'liked':
+        cursor.execute(
+            'SELECT * FROM liked WHERE user_id = %s AND bar_id = %s',
+            (user_id, bar_id)
+        )
+    elif list_type == 'want_to_go':
+        cursor.execute(
+            'SELECT * FROM want_to_go WHERE user_id = %s AND bar_id = %s',
+            (user_id, bar_id)
+        )
+    else:
+        return jsonify({'status': 'Invalid list type'}), 400
+
+    existing_entry = cursor.fetchone()
+
+    if existing_entry:
+        return jsonify({'status': f'This bar is already in your {list_type} list'}), 400
+
     # Insert into the appropriate list table
     if list_type == 'been_there':
         cursor.execute(
@@ -916,8 +940,6 @@ def add_to_list():
             'INSERT INTO want_to_go (user_id, bar_id) VALUES (%s, %s)',
             (user_id, bar_id)
         )
-    else:
-        return jsonify({'status': 'Invalid list type'}), 400
 
     conn.commit()
     cursor.close()
