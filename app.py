@@ -1014,8 +1014,40 @@ def get_want_to_go():
 
 
 
+@app.route('/remove_from_list', methods=['POST'])
+def remove_from_list():
+    data = request.json
+    email = data.get('email')
+    bar_id = data.get('bar_id')
+    list_type = data.get('list_type')
+
+    if not email or not bar_id or not list_type:
+        return jsonify({'status': 'Missing required fields'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Get user_id from email
+    cursor.execute('SELECT id FROM users WHERE email = %s', (email,))
+    user_id = cursor.fetchone()
+
+    if not user_id:
+        return jsonify({'status': 'User not found'}), 404
 
 
+    if list_type == 'been_there':
+        cursor.execute('DELETE FROM been_there WHERE user_id = %s AND bar_id = %s', (user_id, bar_id))
+    elif list_type == 'liked':
+        cursor.execute('DELETE FROM liked WHERE user_id = %s AND bar_id = %s', (user_id, bar_id))
+    elif list_type == 'want_to_go':
+        cursor.execute('DELETE FROM want_to_go WHERE user_id = %s AND bar_id = %s', (user_id, bar_id))
+    else:
+        return jsonify({'status': 'Invalid list type'}), 400
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return jsonify({'status': 'Bar removed from list successfully!'}), 200
 
 
 
@@ -1203,4 +1235,4 @@ def get_feedback(email):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5001)
