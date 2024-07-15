@@ -474,7 +474,7 @@ def get_songs_for_bar(bar_id):
 @app.route('/create_user', methods=['POST'])
 def create_user():
     data = request.json
-    email = data['email']
+    identifier = data['email']
     name = data.get('name')  # Get the name from the request
 
     if not name:
@@ -482,16 +482,17 @@ def create_user():
 
     conn = get_db_connection()
     cursor = conn.cursor()
-        # Check if the user already exists
-    cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
+
+    # Check if the user already exists
+    cursor.execute('SELECT * FROM users WHERE email = %s', (identifier,))
     user = cursor.fetchone()
-    
+
     if user:
         return jsonify({'status': 'User already exists'}), 200
-    
+
     cursor.execute(
         'INSERT INTO users (email, name) VALUES (%s, %s)',
-        (email, name)
+        (identifier, name)
     )
     conn.commit()
     cursor.close()
