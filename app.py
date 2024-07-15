@@ -1132,48 +1132,23 @@ def update_bar_detail(bar_id):
     return jsonify({"status": "Bar details updated successfully"})
 
 
-"""
-@app.route('/api/update_description/<int:bar_id>', methods=['PUT'])
-def update_description(bar_id):
+@app.route('/api/update_enable_requests/<int:bar_id>', methods=['PUT'])
+def update_enable_requests(bar_id):
     data = request.json
-    description = data.get('description')
+    enable_requests = data.get('enable_requests')
+
+    if enable_requests is None:
+        return jsonify({'error': 'enable_requests field is required'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    cursor.execute('''
-        UPDATE bars
-        SET description = %s
-        WHERE id = %s
-    ''', (description, bar_id))
-
+    cursor.execute('UPDATE bars SET enable_requests = %s WHERE id = %s', (enable_requests, bar_id))
     conn.commit()
     cursor.close()
     conn.close()
 
-    return jsonify({'status': 'success'})
+    return jsonify({'status': 'enable_requests updated successfully'})
 
-
-@app.route('/api/update_phone_number/<int:bar_id>', methods=['PUT'])
-def update_phone_number(bar_id):
-    data = request.json
-    phone_number = data.get('phone_number')
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute('''
-        UPDATE bars
-        SET phone_number = %s
-        WHERE id = %s
-    ''', (phone_number, bar_id))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    return jsonify({'status': 'success'})
-"""
 
 
 
