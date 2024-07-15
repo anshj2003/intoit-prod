@@ -76,7 +76,7 @@ def ai_search():
     openai.api_key = OPENAI_KEY
 
     response = openai.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"Based on the following query, suggest a bar near the user. Say only the name of the establishment that you recommend. Format should be 'bar', no additional punctuation: {combined_query}"}
@@ -116,12 +116,28 @@ def ai_search():
         "avgFemaleAge": bar[11],
         "percentSingleMen": bar[12],
         "percentSingleWomen": bar[13],
+        "djsInstagram": bar[25],
+        "ticketLink": bar[26],
+        "enableRequests": bar[27]
     }
 
+    # Update the AI recommendations database
+    import time
+    current_time = int(time.time())
+    cursor.execute('''
+        INSERT INTO ai_recommendations (query, bars, last_updated)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (query) DO UPDATE
+        SET bars = EXCLUDED.bars,
+            last_updated = EXCLUDED.last_updated
+    ''', (query, json.dumps([bar_dict]), current_time))
+
+    conn.commit()
     cursor.close()
     conn.close()
 
     return jsonify([bar_dict])
+
 
 
 
