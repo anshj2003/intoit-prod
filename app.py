@@ -1108,7 +1108,7 @@ def validate_passcode():
 
 
 
-# UPDATE DESCRIPTION AND PHONE NUMBER
+# UPDATE BAR DETAILS
 
 
 @app.route('/api/update_bar_detail/<int:bar_id>', methods=['PUT'])
@@ -1118,7 +1118,8 @@ def update_bar_detail(bar_id):
         "description": "description",
         "phone_number": "phone_number",
         "djs_instagram": "djs_instagram",
-        "ticket_link": "ticket_link"
+        "ticket_link": "ticket_link",
+        "price_num": "price_num"
     }
     
     updates = []
@@ -1126,11 +1127,20 @@ def update_bar_detail(bar_id):
     
     for key, field in field_map.items():
         if key in data:
-            if data[key] == "":
+            if data[key] == "" or data[key] is None:
                 updates.append(f"{field} = NULL")
             else:
-                updates.append(f"{field} = %s")
-                params.append(data[key])
+                if key == "price_num":
+                    try:
+                        # Validate that price_num is a valid double precision number
+                        price_num = float(data[key])
+                        updates.append(f"{field} = %s")
+                        params.append(price_num)
+                    except ValueError:
+                        return jsonify({"error": f"Invalid value for {key}"}), 400
+                else:
+                    updates.append(f"{field} = %s")
+                    params.append(data[key])
     
     if not updates:
         return jsonify({"error": "No valid fields to update"}), 400
@@ -1146,6 +1156,7 @@ def update_bar_detail(bar_id):
     conn.close()
     
     return jsonify({"status": "Bar details updated successfully"})
+
 
 
 @app.route('/api/update_enable_requests/<int:bar_id>', methods=['PUT'])
