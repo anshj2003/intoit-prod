@@ -635,6 +635,7 @@ def delete_user():
 
 
 
+
 @app.route('/api/bars', methods=['GET'])
 def get_bars():
     page = int(request.args.get('page', 1))
