@@ -578,6 +578,60 @@ def update_user():
 
 
 
+# DELETE USER
+
+@app.route('/delete_user', methods=['POST'])
+def delete_user():
+    data = request.json
+    email = data['email']
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Start a transaction
+        conn.autocommit = False
+
+        # Delete from votes
+        cursor.execute('DELETE FROM votes WHERE user_email = %s', (email,))
+
+        # Delete from song_requests
+        cursor.execute('DELETE FROM song_requests WHERE user_email = %s', (email,))
+
+        # Delete from user_feedback
+        cursor.execute('DELETE FROM user_feedback WHERE user_email = %s', (email,))
+
+        # Get user_id from users table
+        cursor.execute('SELECT id FROM users WHERE email = %s', (email,))
+        user = cursor.fetchone()
+        if not user:
+            raise Exception("User not found")
+        user_id = user[0]
+
+        # Delete from been_there
+        cursor.execute('DELETE FROM been_there WHERE user_id = %s', (user_id,))
+
+        # Delete from liked
+        cursor.execute('DELETE FROM liked WHERE user_id = %s', (user_id,))
+
+        # Delete from want_to_go
+        cursor.execute('DELETE FROM want_to_go WHERE user_id = %s', (user_id,))
+
+        # Finally, delete from users
+        cursor.execute('DELETE FROM users WHERE email = %s', (email,))
+
+        # Commit the transaction
+        conn.commit()
+        return jsonify({"status": "User deleted successfully!"}), 200
+
+    except Exception as e:
+        # Rollback the transaction on error
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 
