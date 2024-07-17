@@ -116,6 +116,8 @@ def ai_search():
         "avgFemaleAge": bar[11],
         "percentSingleMen": bar[12],
         "percentSingleWomen": bar[13],
+        "latitude": bar[23], 
+        "longitude": bar[24],
         "djsInstagram": bar[25],
         "ticketLink": bar[26],
         "enableRequests": bar[27]
