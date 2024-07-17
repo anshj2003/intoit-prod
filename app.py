@@ -670,10 +670,10 @@ def get_bars():
     """
 
     params = [
-        latitude, longitude, latitude,
-        f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%",
-        selected_price, selected_price,
-        selected_distance, latitude, longitude, latitude, selected_distance
+        latitude, longitude, latitude,  # Haversine params for distance calculation
+        f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%",  # Search params
+        selected_price, selected_price,  # Price filter params
+        latitude, longitude, latitude, selected_distance  # Haversine params for distance filter
     ]
 
     if selected_genres:
