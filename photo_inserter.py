@@ -4,10 +4,10 @@ import ast
 
 # Database connection details
 db_config = {
-    'dbname': 'nightlife_st',
+    'dbname': 'intoit-prod',
     'user': 'postgres',
     'password': 'Anshtheboss1',
-    'host': '3.229.18.161',
+    'host': 'intoit-prod.cx2s40qaqixr.us-east-1.rds.amazonaws.com',
 }
 
 # Read the CSV file
