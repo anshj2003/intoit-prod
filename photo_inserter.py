@@ -11,7 +11,7 @@ db_config = {
 }
 
 # Read the CSV file
-csv_file_path = '/Users/anshjhaveri/downloads/updated_csv_file_geoparse.csv'
+csv_file_path = '/updated_csv_file_geoparse.csv'
 data = pd.read_csv(csv_file_path)
 
 # Define a function to extract latitude and longitude from the geometry column
