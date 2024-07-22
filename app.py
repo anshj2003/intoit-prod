@@ -1321,7 +1321,7 @@ def update_database():
         current_day = datetime.now().strftime('%A')
         current_hour = datetime.now().hour
         
-        current_vibe = next((day['data'][current_hour] for day in vibe if day['name'] == current_day), 0)
+        current_vibe = next((day['data'][current_hour] for day in vibe if day['name'] == current_day), 0) / 10
         current_line_wait_time = next((day['data'][current_hour] for day in line_wait_time if day['name'] == current_day), 0)
         
         query = """
