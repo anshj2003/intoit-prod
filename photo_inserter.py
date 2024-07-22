@@ -1,30 +1,26 @@
 import pandas as pd
 import psycopg2
-import ast
+import re
+import numpy as np
 
 # Database connection details
 db_config = {
-    'dbname': 'intoit-prod',
+    'dbname': 'nightlife_st',
     'user': 'postgres',
     'password': 'Anshtheboss1',
-    'host': 'intoit-prod.cx2s40qaqixr.us-east-1.rds.amazonaws.com',
+    'host': 'ec2-3-229-18-161.compute-1.amazonaws.com',
 }
 
 # Read the CSV file
-csv_file_path = 'updated_csv_file_geoparse.csv'
+csv_file_path = '/Users/anshjhaveri/Downloads/popular_times_database.csv'
 data = pd.read_csv(csv_file_path)
 
-# Define a function to extract latitude and longitude from the geometry column
-def extract_lat_lng(geometry):
-    try:
-        geom_dict = ast.literal_eval(geometry)
-        location = geom_dict.get('location', {})
-        return location.get('lat', None), location.get('lng', None)
-    except (ValueError, SyntaxError):
-        return None, None
-
-# Apply the function to the geometry column and update latitude and longitude columns
-data['latitude'], data['longitude'] = zip(*data['geometry'].apply(extract_lat_lng))
+# Function to remove non-numerical characters from phone number
+def clean_phone_number(phone_number):
+    if isinstance(phone_number, str):  # Ensure it's a string before cleaning
+        cleaned = re.sub(r'\D', '', phone_number)
+        return cleaned if cleaned else None
+    return None
 
 # Establish a database connection
 conn = psycopg2.connect(**db_config)
@@ -33,18 +29,25 @@ cursor = conn.cursor()
 # Update the database records
 for index, row in data.iterrows():
     name = row['name']
-    latitude = row['latitude']
-    longitude = row['longitude']
+    phone_number = row.get('international_phone_number', None)
+    
+    if pd.isna(phone_number) or phone_number == '':  # Check for NaN or empty string
+        clean_number = None
+    else:
+        clean_number = clean_phone_number(phone_number)
+    
     # Construct the SQL query
     query = """
     UPDATE bars
-    SET latitude = %s, longitude = %s
+    SET phone_number = %s
     WHERE name = %s;
     """
-    cursor.execute(query, (latitude, longitude, name))
-    print(f"Updated {name} with latitude {latitude} and longitude {longitude}")
+    cursor.execute(query, (clean_number, name))
+    print(f"Updated bar {name} with phone number {clean_number}")
 
 # Commit the changes and close the connection
 conn.commit()
 cursor.close()
 conn.close()
+
+print("Phone numbers updated successfully.")
