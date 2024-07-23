@@ -65,7 +65,7 @@ def update_database():
                 if isinstance(vibe, list):
                     day_data = next((day['data'] for day in vibe if day['name'] == current_day), None)
                     if day_data:
-                        current_vibe = day_data[current_hour] / 10
+                        current_vibe = day_data[current_hour] / 10 if day_data[current_hour] != 0 else None
                     else:
                         current_vibe = None
                 else:
@@ -78,7 +78,7 @@ def update_database():
                 if isinstance(line_wait_time, list):
                     day_data = next((day['data'] for day in line_wait_time if day['name'] == current_day), None)
                     if day_data:
-                        current_line_wait_time = day_data[current_hour]
+                        current_line_wait_time = day_data[current_hour] if day_data[current_hour] != 0 else None
                     else:
                         current_line_wait_time = None
                 else:
