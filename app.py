@@ -1302,7 +1302,7 @@ def get_feedback(email):
 
 
 def update_database():
-    input_csv = 'popular_times_database.csv'
+    input_csv = '/Users/anshjhaveri/Downloads/final_bars_database_google.csv'
     bars_df = pd.read_csv(input_csv)
     
     conn = get_db_connection()
@@ -1337,7 +1337,9 @@ def update_database():
     print("Database updated at", datetime.now())
 
 def run_schedule():
-    schedule.every().hour.do(update_database)
+    update_database()  # Update immediately upon starting
+
+    schedule.every().hour.at(":00").do(update_database)  # Schedule to run at the start of every hour
     while True:
         schedule.run_pending()
         time.sleep(1)
