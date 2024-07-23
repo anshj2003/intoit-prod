@@ -67,12 +67,12 @@ def update_database():
                     if day_data:
                         current_vibe = day_data[current_hour] / 10
                     else:
-                        current_vibe = 0
+                        current_vibe = None
                 else:
-                    current_vibe = 0
+                    current_vibe = None
             except Exception as e:
                 logger.error("Error processing vibe for bar %s: %s", bar_name, e)
-                current_vibe = 0
+                current_vibe = None
             
             try:
                 if isinstance(line_wait_time, list):
@@ -80,12 +80,12 @@ def update_database():
                     if day_data:
                         current_line_wait_time = day_data[current_hour]
                     else:
-                        current_line_wait_time = 0
+                        current_line_wait_time = None
                 else:
-                    current_line_wait_time = 0
+                    current_line_wait_time = None
             except Exception as e:
                 logger.error("Error processing line_wait_time for bar %s: %s", bar_name, e)
-                current_line_wait_time = 0
+                current_line_wait_time = None
             
             query = """
                 UPDATE bars
