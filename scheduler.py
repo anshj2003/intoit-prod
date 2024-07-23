@@ -29,7 +29,7 @@ def get_db_connection():
 def update_database():
     try:
         logger.info("Starting database update...")
-        input_csv = 'popular_times_database.csv'
+        input_csv = '/Users/anshjhaveri/Downloads/final_bars_database_google.csv'
         bars_df = pd.read_csv(input_csv)
         
         conn = get_db_connection()
@@ -58,13 +58,19 @@ def update_database():
             current_hour = datetime.now().hour
             
             try:
-                current_vibe = next((day['data'][current_hour] for day in vibe if day['name'] == current_day), 0) / 10
+                if isinstance(vibe, list):
+                    current_vibe = next((day['data'][current_hour] for day in vibe if day['name'] == current_day), 0) / 10
+                else:
+                    current_vibe = 0
             except Exception as e:
                 logger.error("Error processing vibe for bar %s: %s", bar_name, e)
                 current_vibe = 0
             
             try:
-                current_line_wait_time = next((day['data'][current_hour] for day in line_wait_time if day['name'] == current_day), 0)
+                if isinstance(line_wait_time, list):
+                    current_line_wait_time = next((day['data'][current_hour] for day in line_wait_time if day['name'] == current_day), 0)
+                else:
+                    current_line_wait_time = 0
             except Exception as e:
                 logger.error("Error processing line_wait_time for bar %s: %s", bar_name, e)
                 current_line_wait_time = 0
