@@ -29,7 +29,7 @@ def get_db_connection():
 def update_database():
     try:
         logger.info("Starting database update...")
-        input_csv = 'popular_times_database.csv'
+        input_csv = '/Users/anshjhaveri/Downloads/final_bars_database_google.csv'
         bars_df = pd.read_csv(input_csv)
         
         conn = get_db_connection()
@@ -41,15 +41,33 @@ def update_database():
             line_wait_time = row['time_wait']
             
             if isinstance(vibe, str):
-                vibe = eval(vibe)
+                try:
+                    vibe = eval(vibe)
+                except Exception as e:
+                    logger.error("Error evaluating vibe for bar %s: %s", bar_name, e)
+                    continue
+
             if isinstance(line_wait_time, str):
-                line_wait_time = eval(line_wait_time)
+                try:
+                    line_wait_time = eval(line_wait_time)
+                except Exception as e:
+                    logger.error("Error evaluating line_wait_time for bar %s: %s", bar_name, e)
+                    continue
             
             current_day = datetime.now().strftime('%A')
             current_hour = datetime.now().hour
             
-            current_vibe = next((day['data'][current_hour] for day in vibe if day['name'] == current_day), 0) / 10
-            current_line_wait_time = next((day['data'][current_hour] for day in line_wait_time if day['name'] == current_day), 0)
+            try:
+                current_vibe = next((day['data'][current_hour] for day in vibe if day['name'] == current_day), 0) / 10
+            except Exception as e:
+                logger.error("Error processing vibe for bar %s: %s", bar_name, e)
+                current_vibe = 0
+            
+            try:
+                current_line_wait_time = next((day['data'][current_hour] for day in line_wait_time if day['name'] == current_day), 0)
+            except Exception as e:
+                logger.error("Error processing line_wait_time for bar %s: %s", bar_name, e)
+                current_line_wait_time = 0
             
             query = """
                 UPDATE bars
