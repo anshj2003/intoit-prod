@@ -6,6 +6,7 @@ import schedule
 import time
 from dotenv import load_dotenv
 import logging
+import pytz
 
 load_dotenv()
 
@@ -16,6 +17,7 @@ HOST = os.getenv('HOST')
 DATABASE = os.getenv('DATABASE')
 DB_USER = os.getenv('DB_USER')
 PASSWORD = os.getenv('PASSWORD')
+TIMEZONE = 'America/New_York'  # Set your local time zone
 
 def get_db_connection():
     conn = psycopg2.connect(
@@ -35,6 +37,11 @@ def update_database():
         conn = get_db_connection()
         cur = conn.cursor()
 
+        tz = pytz.timezone(TIMEZONE)
+        current_time = datetime.now(tz)
+        current_day = current_time.strftime('%A')
+        current_hour = current_time.hour
+
         for index, row in bars_df.iterrows():
             bar_name = row['name']
             vibe = row['populartimes']
@@ -53,10 +60,7 @@ def update_database():
                 except Exception as e:
                     logger.error("Error evaluating line_wait_time for bar %s: %s", bar_name, e)
                     continue
-            
-            current_day = datetime.now().strftime('%A')
-            current_hour = datetime.now().hour
-            
+
             try:
                 if isinstance(vibe, list):
                     day_data = next((day['data'] for day in vibe if day['name'] == current_day), None)
@@ -93,7 +97,7 @@ def update_database():
         
         cur.close()
         conn.close()
-        logger.info("Database updated at %s", datetime.now())
+        logger.info("Database updated at %s", datetime.now(tz))
     except Exception as e:
         logger.error("Error updating database: %s", e)
 
