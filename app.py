@@ -1302,7 +1302,7 @@ def get_feedback(email):
 
 
 def update_database():
-    input_csv = '/Users/anshjhaveri/Downloads/final_bars_database_google.csv'
+    input_csv = 'popular_times_database.csv'
     bars_df = pd.read_csv(input_csv)
     
     conn = get_db_connection()
