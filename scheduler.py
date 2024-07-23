@@ -52,20 +52,20 @@ def update_database():
                     vibe = eval(vibe)
                 except Exception as e:
                     logger.error("Error evaluating vibe for bar %s: %s", bar_name, e)
-                    continue
+                    vibe = None
 
             if isinstance(line_wait_time, str):
                 try:
                     line_wait_time = eval(line_wait_time)
                 except Exception as e:
                     logger.error("Error evaluating line_wait_time for bar %s: %s", bar_name, e)
-                    continue
+                    line_wait_time = None
 
             try:
                 if isinstance(vibe, list):
                     day_data = next((day['data'] for day in vibe if day['name'] == current_day), None)
                     if day_data:
-                        current_vibe = day_data[current_hour] / 10 if day_data[current_hour] != 0 else None
+                        current_vibe = day_data[current_hour] / 10
                     else:
                         current_vibe = None
                 else:
@@ -78,7 +78,7 @@ def update_database():
                 if isinstance(line_wait_time, list):
                     day_data = next((day['data'] for day in line_wait_time if day['name'] == current_day), None)
                     if day_data:
-                        current_line_wait_time = day_data[current_hour] if day_data[current_hour] != 0 else None
+                        current_line_wait_time = day_data[current_hour]
                     else:
                         current_line_wait_time = None
                 else:
