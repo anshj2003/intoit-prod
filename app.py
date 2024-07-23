@@ -45,7 +45,12 @@ def get_db_connection():
     )
     return conn
 
+# BAR REDIRECT
 
+@app.route('/barredirect/<int:bar_id>')
+def bar_redirect(bar_id):
+    custom_url_scheme = f"intoit.ansh://bar/{bar_id}"
+    return redirect(custom_url_scheme)
 
 
 # AI SEARCH 
