@@ -1298,67 +1298,6 @@ def get_feedback(email):
 
 
 
-# TIME STUFF
-
-
-def update_database():
-    try:
-        print("Starting database update...")
-        input_csv = 'popular_times_database.csv'
-        bars_df = pd.read_csv(input_csv)
-        
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        for index, row in bars_df.iterrows():
-            bar_name = row['name']
-            vibe = row['populartimes']
-            line_wait_time = row['time_wait']
-            
-            if isinstance(vibe, str):
-                vibe = eval(vibe)
-            if isinstance(line_wait_time, str):
-                line_wait_time = eval(line_wait_time)
-            
-            current_day = datetime.now().strftime('%A')
-            current_hour = datetime.now().hour
-            
-            current_vibe = next((day['data'][current_hour] for day in vibe if day['name'] == current_day), 0) / 10
-            current_line_wait_time = next((day['data'][current_hour] for day in line_wait_time if day['name'] == current_day), 0)
-            
-            query = """
-                UPDATE bars
-                SET vibe = %s, line_wait_time = %s
-                WHERE name = %s
-            """
-            cur.execute(query, (current_vibe, current_line_wait_time, bar_name))
-            conn.commit()
-        
-        cur.close()
-        conn.close()
-        print("Database updated at", datetime.now())
-    except Exception as e:
-        print(f"Error updating database: {e}")
-
-def run_schedule():
-    print("Running initial database update...")
-    update_database()  # Update immediately upon starting
-
-    print("Scheduling hourly updates...")
-    schedule.every().hour.at(":00").do(update_database)  # Schedule to run at the start of every hour
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
-
 
 if __name__ == '__main__':
-    # Start the scheduler in a separate thread
-    print("Starting scheduler thread...")
-    scheduler_thread = threading.Thread(target=run_schedule)
-    scheduler_thread.daemon = True
-    scheduler_thread.start()
-    
-    # Run the Flask app
-    print("Starting Flask app...")
     app.run(debug=True, host='0.0.0.0', port=5000)
