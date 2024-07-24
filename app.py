@@ -1039,7 +1039,7 @@ def get_been_there():
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     cursor.execute('''
-        SELECT b.id, b.name, b.address, b.photo
+        SELECT b.id, b.name, b.address, b.photo, bt.rating, bt.comments
         FROM been_there bt
         JOIN bars b ON bt.bar_id = b.id
         JOIN users u ON bt.user_id = u.id
@@ -1051,6 +1051,7 @@ def get_been_there():
     conn.close()
     
     return jsonify(bars)
+
 
 
 @app.route('/get_liked', methods=['GET'])
