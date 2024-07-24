@@ -1,9 +1,7 @@
 import pandas as pd
 import psycopg2
-import re
-import numpy as np
 
-# Database connection details
+# Database configuration
 db_config = {
     'dbname': 'nightlife_st',
     'user': 'postgres',
@@ -12,42 +10,36 @@ db_config = {
 }
 
 # Read the CSV file
-csv_file_path = '/Users/anshjhaveri/Downloads/popular_times_database.csv'
-data = pd.read_csv(csv_file_path)
+csv_path = '/Users/anshjhaveri/Downloads/places_with_links.csv'
+data = pd.read_csv(csv_path)
 
-# Function to remove non-numerical characters from phone number
-def clean_phone_number(phone_number):
-    if isinstance(phone_number, str):  # Ensure it's a string before cleaning
-        cleaned = re.sub(r'\D', '', phone_number)
-        return cleaned if cleaned else None
-    return None
-
-# Establish a database connection
-conn = psycopg2.connect(**db_config)
+# Connect to the PostgreSQL database
+conn = psycopg2.connect(
+    dbname=db_config['dbname'],
+    user=db_config['user'],
+    password=db_config['password'],
+    host=db_config['host']
+)
 cursor = conn.cursor()
 
-# Update the database records
+# Loop through each row in the CSV file
 for index, row in data.iterrows():
     name = row['name']
-    phone_number = row.get('international_phone_number', None)
-    
-    if pd.isna(phone_number) or phone_number == '':  # Check for NaN or empty string
-        clean_number = None
-    else:
-        clean_number = clean_phone_number(phone_number)
-    
-    # Construct the SQL query
-    query = """
+    website_link = row['website_link'] if row['website_link'] != 'Not found' else None
+    reservation_link = row['reservation_link'] if row['reservation_link'] != 'Not found' else None
+
+    # Update the bars table
+    update_query = """
     UPDATE bars
-    SET phone_number = %s
-    WHERE name = %s;
+    SET website_link = %s, reservation_link = %s
+    WHERE name = %s
     """
-    cursor.execute(query, (clean_number, name))
-    print(f"Updated bar {name} with phone number {clean_number}")
+    cursor.execute(update_query, (website_link, reservation_link, name))
+    print("updated for", name, website_link, reservation_link)
 
 # Commit the changes and close the connection
 conn.commit()
 cursor.close()
 conn.close()
 
-print("Phone numbers updated successfully.")
+print("Database update complete.")

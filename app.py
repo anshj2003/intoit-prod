@@ -128,7 +128,9 @@ def ai_search():
         "longitude": bar[24],
         "djsInstagram": bar[25],
         "ticketLink": bar[26],
-        "enableRequests": bar[27]
+        "enableRequests": bar[27],
+        "website_link": bar[28],
+        "reservation_link": bar[29]
     }
 
     # Update the AI recommendations database
