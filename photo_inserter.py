@@ -10,7 +10,7 @@ db_config = {
 }
 
 # Read the CSV file
-csv_path = '/Users/anshjhaveri/Downloads/places_with_links.csv'
+csv_path = 'places_with_links.csv'
 data = pd.read_csv(csv_path)
 
 # Connect to the PostgreSQL database
