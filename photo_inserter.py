@@ -3,10 +3,10 @@ import psycopg2
 
 # Database configuration
 db_config = {
-    'dbname': 'nightlife_st',
+    'dbname': 'intoit-prod',
     'user': 'postgres',
     'password': 'Anshtheboss1',
-    'host': 'ec2-3-229-18-161.compute-1.amazonaws.com',
+    'host': 'intoit-prod.cx2s40qaqixr.us-east-1.rds.amazonaws.com',
 }
 
 # Read the CSV file
