@@ -727,7 +727,7 @@ def get_bars():
 def get_nearby_bars():
     latitude = float(request.args.get('latitude'))
     longitude = float(request.args.get('longitude'))
-    distance_limit = 30  # meters
+    distance_limit = 50  # meters
 
     def haversine(lat1, lon1, lat2, lon2):
         R = 6371e3  # Earth radius in meters
