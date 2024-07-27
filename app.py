@@ -651,7 +651,7 @@ def delete_user():
 @app.route('/api/bars', methods=['GET'])
 def get_bars():
     page = int(request.args.get('page', 1))
-    per_page = int(request.args.get('per_page', 30))
+    per_page = int(request.args.get(30))
     search = request.args.get('search', '')
     selected_price = request.args.get('selected_price', '')
     selected_distance = float(request.args.get('selected_distance', 0))
