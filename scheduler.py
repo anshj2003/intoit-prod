@@ -46,6 +46,7 @@ def update_database():
             bar_name = row['name']
             vibe = row['populartimes']
             line_wait_time = row['time_wait']
+            how_crowded = None
             
             if isinstance(vibe, str):
                 try:
@@ -73,6 +74,17 @@ def update_database():
             except Exception as e:
                 logger.error("Error processing vibe for bar %s: %s", bar_name, e)
                 current_vibe = None
+
+            # Determine the crowd level based on the vibe value
+            if current_vibe is not None:
+                if current_vibe <= 2.5:
+                    how_crowded = 'empty'
+                elif current_vibe > 2.5 and current_vibe <= 5:
+                    how_crowded = 'medium/empty'
+                elif current_vibe > 5 and current_vibe <= 7.5:
+                    how_crowded = 'medium/crowded'
+                elif current_vibe > 7.5 and current_vibe <= 10:
+                    how_crowded = 'crowded'
             
             try:
                 if isinstance(line_wait_time, list):
@@ -89,10 +101,10 @@ def update_database():
             
             query = """
                 UPDATE bars
-                SET vibe = %s, line_wait_time = %s
+                SET vibe = %s, line_wait_time = %s, how_crowded = %s
                 WHERE name = %s
             """
-            cur.execute(query, (current_vibe, current_line_wait_time, bar_name))
+            cur.execute(query, (current_vibe, current_line_wait_time, how_crowded, bar_name))
             conn.commit()
         
         cur.close()
