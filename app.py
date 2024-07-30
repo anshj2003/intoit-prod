@@ -165,6 +165,7 @@ def update_bar():
     bar_id = data.get('bar_id')
     vibe = data.get('vibe')
     line_length = data.get('line_length')
+    how_crowded = data.get('how_crowded')
 
     if not bar_id or line_length is None:
         return jsonify({'error': 'bar_id and line_length are required'}), 400
@@ -178,6 +179,11 @@ def update_bar():
     if vibe is not None:
         updates.append('vibe = %s')
         params.append(vibe)
+
+    if how_crowded is not None:
+        updates.append('how_crowded = %s')
+        params.append(how_crowded)
+        
     updates.append('line_wait_time = %s')
     params.append(line_length)
 
