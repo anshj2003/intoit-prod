@@ -130,7 +130,8 @@ def ai_search():
         "ticketLink": bar[26],
         "enableRequests": bar[27],
         "website_link": bar[28],
-        "reservation_link": bar[29]
+        "reservation_link": bar[29],
+        "howCrowded": bar[30]
     }
 
     # Update the AI recommendations database
