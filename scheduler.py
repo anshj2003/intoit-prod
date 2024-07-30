@@ -83,8 +83,10 @@ def update_database():
                     how_crowded = 'medium/empty'
                 elif current_vibe > 5 and current_vibe <= 7.5:
                     how_crowded = 'medium/crowded'
-                elif current_vibe > 7.5 and current_vibe <= 10:
+                elif current_vibe > 7.5 and current_vibe <= 9.8:
                     how_crowded = 'crowded'
+                elif current_vibe > 9.8 and current_vibe <= 10:
+                    how_crowded = 'too crowded'
             
             try:
                 if isinstance(line_wait_time, list):
