@@ -6,11 +6,11 @@ db_config = {
     'dbname': 'intoit-prod',
     'user': 'postgres',
     'password': 'Anshtheboss1',
-    'host': 'intoit-prod.cx2s40qaqixr.us-east-1.rds.amazonaws.com',
+    'host': 'ec2-100-29-142-252.compute-1.amazonaws.com',
 }
 
-# Read the CSV file
-csv_path = 'places_with_links.csv'
+# Read the CSV file containing generated clean descriptions
+csv_path = 'places_cleaned_generated_descriptions.csv'
 data = pd.read_csv(csv_path)
 
 # Connect to the PostgreSQL database
@@ -25,17 +25,18 @@ cursor = conn.cursor()
 # Loop through each row in the CSV file
 for index, row in data.iterrows():
     name = row['name']
-    website_link = row['website_link'] if row['website_link'] != 'Not found' else None
-    reservation_link = row['reservation_link'] if row['reservation_link'] != 'Not found' else None
+    description = row['description']
 
-    # Update the bars table
-    update_query = """
-    UPDATE bars
-    SET website_link = %s, reservation_link = %s
-    WHERE name = %s
-    """
-    cursor.execute(update_query, (website_link, reservation_link, name))
-    print("updated for", name, website_link, reservation_link)
+    # Check if the description is missing or "Description not found"
+    if description and description != "Description not found":
+        # Update the bars table with the new description
+        update_query = """
+        UPDATE bars
+        SET description = %s
+        WHERE name = %s AND (description IS NULL OR description = 'Description not found')
+        """
+        cursor.execute(update_query, (description, name))
+        print(f"Updated description for {name}")
 
 # Commit the changes and close the connection
 conn.commit()
