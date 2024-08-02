@@ -84,7 +84,7 @@ def ai_search():
     openai.api_key = OPENAI_KEY
 
     response = openai.chat.completions.create(
-        model="gpt-4",
+        model="gpt-4o",
         messages=[
             {"role": "system", "content": "You are a helpful assistant designed to find nightlife."},
             {"role": "user", "content": f"Based on the following query, suggest a bar near me. Say only the name of the establishment that you recommend. Format must be 'bar', no additional punctuation. You will act as an expert in New York City nightlife venues to help me find the perfect bar or venue based on specific preferences. When I provide a description of what I'm looking for, you will match a bar or venue to these criteria, prioritizing music, ambiance, and the specific vibe of the venue. For example, if I ask for a club with a retro vibe in Brooklyn, you will only return the name of a bar that is in Brooklyn and has a retro style music and ambiance. Consider the following priorities when matching venues: (Music: Match the genre or style of music requested (e.g., house music, jazz). Ambiance: Consider the overall atmosphere and setting (e.g., chill, lively, sophisticated). Specific Vibe: Match the type of venue described (e.g., cocktail bar, dance club, dive bar).) If I ask for a cocktail bar, the place should not have a dance floor, but if I ask for a club or nightclub, it should. If I request a bar that plays house music, it should return a bar that traditionally plays house music or has DJs. For a chill vibe without specifying music, it could recommend a jazz bar or a smaller cocktail bar focused more on ambiance. When multiple bars match the criteria, pick the closest one to the user or the specified location. The AI should simply return the name of the bar. If no bars match all the specified criteria exactly, provide the closest match. You must recommend a bar even if you have low confidence or not enough information. Remember the format 'bar'. Here is the query: {combined_query}"}
@@ -183,7 +183,7 @@ def update_bar():
     if how_crowded is not None:
         updates.append('how_crowded = %s')
         params.append(how_crowded)
-        
+
     updates.append('line_wait_time = %s')
     params.append(line_length)
 
