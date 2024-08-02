@@ -6,7 +6,7 @@ db_config = {
     'dbname': 'intoit-prod',
     'user': 'postgres',
     'password': 'Anshtheboss1',
-    'host': 'ec2-100-29-142-252.compute-1.amazonaws.com',
+    'host': 'intoit-prod.cx2s40qaqixr.us-east-1.rds.amazonaws.com',
 }
 
 # Read the CSV file containing generated clean descriptions
