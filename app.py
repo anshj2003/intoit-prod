@@ -1433,6 +1433,55 @@ def get_following():
     return jsonify([follow['followed_id'] for follow in followed_ids])
 
 
+# BEEN THERE FEED
+
+@app.route('/api/following/been_there', methods=['GET'])
+def get_following_been_there():
+    user_identifier = request.args.get('identifier')
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Get the user ID of the follower using the identifier (email)
+    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
+    follower_data = cursor.fetchone()
+
+    if follower_data is None:
+        cursor.close()
+        conn.close()
+        return jsonify([])
+
+    follower_id = follower_data['id']
+
+    # Get the list of followed user IDs
+    cursor.execute("SELECT followed_id FROM follows WHERE follower_id = %s", (follower_id,))
+    followed_ids = cursor.fetchall()
+
+    # Extract the followed IDs
+    followed_ids_list = [f['followed_id'] for f in followed_ids]
+
+    if not followed_ids_list:
+        cursor.close()
+        conn.close()
+        return jsonify([])
+
+    # Get the "been there" entries for the followed users
+    query = """
+    SELECT bt.user_id, bt.bar_id, bt.rating, bt.comments, b.name as bar_name, u.name as user_name
+    FROM been_there bt
+    JOIN bars b ON bt.bar_id = b.id
+    JOIN users u ON bt.user_id = u.id
+    WHERE bt.user_id = ANY(%s)
+    ORDER BY bt.user_id, bt.bar_id
+    """
+    cursor.execute(query, (followed_ids_list,))
+    been_there_entries = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(been_there_entries)
+
 
 
 
