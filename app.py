@@ -1343,5 +1343,80 @@ def get_users():
 
 
 
+
+# FOLLOW
+
+@app.route('/api/follow', methods=['POST'])
+def follow_user():
+    data = request.get_json()
+    follower_id = data.get('follower_id')
+    followed_id = data.get('followed_id')
+
+    if not follower_id or not followed_id:
+        return jsonify({'error': 'Missing follower_id or followed_id'}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if the follow relationship already exists
+        cursor.execute(
+            "SELECT * FROM follows WHERE follower_id = %s AND followed_id = %s",
+            (follower_id, followed_id)
+        )
+        existing_follow = cursor.fetchone()
+
+        if existing_follow:
+            return jsonify({'error': 'Already following this user'}), 400
+
+        # Insert new follow relationship
+        cursor.execute(
+            "INSERT INTO follows (follower_id, followed_id) VALUES (%s, %s)",
+            (follower_id, followed_id)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({'message': 'User followed successfully'}), 200
+
+    except Exception as e:
+        print(f"Error following user: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+# UNFOLLOW
+
+@app.route('/api/unfollow', methods=['POST'])
+def unfollow_user():
+    data = request.get_json()
+    follower_id = data.get('follower_id')
+    followed_id = data.get('followed_id')
+
+    if not follower_id or not followed_id:
+        return jsonify({'error': 'Missing follower_id or followed_id'}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Delete follow relationship
+        cursor.execute(
+            "DELETE FROM follows WHERE follower_id = %s AND followed_id = %s",
+            (follower_id, followed_id)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({'message': 'User unfollowed successfully'}), 200
+
+    except Exception as e:
+        print(f"Error unfollowing user: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
