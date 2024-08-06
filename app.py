@@ -1315,11 +1315,12 @@ def get_feedback(email):
 # SOCIAL PART
 
 # ADD FRIENDS
+
 @app.route('/api/users', methods=['GET'])
 def get_users():
     search = request.args.get('search', '').strip()
     page = int(request.args.get('page', 1))
-    per_page = 20
+    per_page = int(request.args.get('per_page', 10))
     offset = (page - 1) * per_page
 
     if not search:
@@ -1342,6 +1343,7 @@ def get_users():
     conn.close()
     
     return jsonify(users)
+
 
 
 
