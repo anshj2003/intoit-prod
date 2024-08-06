@@ -1320,9 +1320,10 @@ def get_feedback(email):
 def get_users():
     search = request.args.get('search', '').strip()
     page = int(request.args.get('page', 1))
-    per_page = 10
+    per_page = 30
     offset = (page - 1) * per_page
 
+    # If the search query is empty, return an empty list
     if not search:
         return jsonify([])
 
