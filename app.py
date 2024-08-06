@@ -1319,18 +1319,21 @@ def get_feedback(email):
 @app.route('/api/users', methods=['GET'])
 def get_users():
     search = request.args.get('search', '').strip()
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 10))
+    offset = (page - 1) * per_page
     
-    # If the search query is empty, return an empty list
     if not search:
         return jsonify([])
 
     query = """
-    SELECT id, email, name, username FROM users
+    SELECT id AS identifier, email, name, username FROM users
     WHERE name ILIKE %s OR username ILIKE %s
     ORDER BY name ASC
+    LIMIT %s OFFSET %s
     """
     
-    params = [f"%{search}%", f"%{search}%"]
+    params = [f"%{search}%", f"%{search}%", per_page, offset]
     
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -1340,6 +1343,7 @@ def get_users():
     conn.close()
     
     return jsonify(users)
+
 
 
 
