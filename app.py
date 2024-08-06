@@ -1490,48 +1490,6 @@ def get_blocked_users():
     return jsonify(blocked_user_ids)
 
 
-# FRIENDS FEED
-
-@app.route('/api/friends_feed', methods=['GET'])
-def get_friends_feed():
-    user_identifier = request.args.get('identifier')
-
-    # Fetch the user ID of the requesting user using the identifier (email)
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
-    result = cursor.fetchone()
-    
-    if not result:
-        return jsonify({'error': 'User not found'}), 404
-    
-    user_id = result[0]
-
-    # Fetch the user IDs of the people the user follows
-    cursor.execute("SELECT followed_id FROM follows WHERE follower_id = %s", (user_id,))
-    followed_user_ids = [row[0] for row in cursor.fetchall()]
-
-    # If no followed users, return an empty list
-    if not followed_user_ids:
-        return jsonify([])
-
-    # Fetch "been there" data for the followed users
-    format_strings = ','.join(['%s'] * len(followed_user_ids))
-    cursor.execute(f"""
-        SELECT bt.id, bt.user_id, bt.bar_id, bt.rating, bt.comments, u.name as user_name, b.name as bar_name
-        FROM been_there bt
-        JOIN users u ON bt.user_id = u.id
-        JOIN bars b ON bt.bar_id = b.id
-        WHERE bt.user_id IN ({format_strings})
-        ORDER BY bt.id DESC
-    """, tuple(followed_user_ids))
-
-    friends_feed = cursor.fetchall()
-    cursor.close()
-    conn.close()
-
-    return jsonify(friends_feed)
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
