@@ -1414,10 +1414,14 @@ def get_following():
 
     # Get the user ID of the follower using the identifier (email)
     cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
-    follower_id = cursor.fetchone()
+    follower_data = cursor.fetchone()
 
-    if follower_id is None:
+    if follower_data is None:
+        cursor.close()
+        conn.close()
         return jsonify([])
+
+    follower_id = follower_data['id']  # Extract the 'id' from the dictionary
 
     # Get the list of followed user IDs
     cursor.execute("SELECT followed_id FROM follows WHERE follower_id = %s", (follower_id,))
@@ -1427,6 +1431,7 @@ def get_following():
     conn.close()
 
     return jsonify([follow['followed_id'] for follow in followed_ids])
+
 
 
 
