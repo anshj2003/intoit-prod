@@ -1462,19 +1462,15 @@ def block_user():
     if blocked_data is None:
         # Block the user
         cursor.execute("INSERT INTO blocked_users (blocker_id, blocked_id) VALUES (%s, %s)", (blocker_id, blocked_id))
-        
-        # Unfollow the user if they are blocked
-        cursor.execute("DELETE FROM follows WHERE follower_id = %s AND followed_id = %s", (blocker_id, blocked_id))
     else:
         # Unblock the user
-        cursor.execute("DELETE FROM blocked_users WHERE blocker_id = %s AND blocked_id = %s")
+        cursor.execute("DELETE FROM blocked_users WHERE blocker_id = %s AND blocked_id = %s", (blocker_id, blocked_id))
 
     conn.commit()
     cursor.close()
     conn.close()
 
     return jsonify({"success": True})
-
 
 @app.route('/api/blocked_users', methods=['GET'])
 def get_blocked_users():
