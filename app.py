@@ -1319,30 +1319,27 @@ def get_feedback(email):
 @app.route('/api/users', methods=['GET'])
 def get_users():
     search = request.args.get('search', '').strip()
-    current_user_id = int(request.args.get('current_user_id'))
-
+    
+    # If the search query is empty, return an empty list
     if not search:
         return jsonify([])
 
     query = """
-    SELECT u.id, u.email, u.name, u.username,
-    EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = %s AND f.followed_id = u.id) AS "isFollowing"
-    FROM users u
-    WHERE u.name ILIKE %s OR u.username ILIKE %s
-    ORDER BY u.name ASC
+    SELECT id, email, name, username FROM users
+    WHERE name ILIKE %s OR username ILIKE %s
+    ORDER BY name ASC
     """
-
-    params = [current_user_id, f"%{search}%", f"%{search}%"]
-
+    
+    params = [f"%{search}%", f"%{search}%"]
+    
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(query, params)
     users = cursor.fetchall()
     cursor.close()
     conn.close()
-
+    
     return jsonify(users)
-
 
 
 
@@ -1351,72 +1348,61 @@ def get_users():
 
 @app.route('/api/follow', methods=['POST'])
 def follow_user():
-    data = request.get_json()
-    follower_id = data.get('follower_id')
-    followed_id = data.get('followed_id')
+    data = request.json
+    user_identifier = data.get('identifier')  # The identifier of the user who is performing the follow action
+    followed_id = data.get('followed_id')  # The ID of the user being followed
 
-    if not follower_id or not followed_id:
-        return jsonify({'error': 'Missing follower_id or followed_id'}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+    # Get the user ID of the follower using the identifier (email)
+    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
+    follower_id = cursor.fetchone()
 
-        # Check if the follow relationship already exists
-        cursor.execute(
-            "SELECT * FROM follows WHERE follower_id = %s AND followed_id = %s",
-            (follower_id, followed_id)
-        )
-        existing_follow = cursor.fetchone()
+    if follower_id is None:
+        return jsonify({'error': 'Follower not found'}), 404
 
-        if existing_follow:
-            return jsonify({'error': 'Already following this user'}), 400
+    # Insert the follow relationship into the follows table
+    cursor.execute(
+        "INSERT INTO follows (follower_id, followed_id) VALUES (%s, %s)",
+        (follower_id, followed_id)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-        # Insert new follow relationship
-        cursor.execute(
-            "INSERT INTO follows (follower_id, followed_id) VALUES (%s, %s)",
-            (follower_id, followed_id)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
-
-        return jsonify({'message': 'User followed successfully'}), 200
-
-    except Exception as e:
-        print(f"Error following user: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+    return jsonify({'message': 'Followed successfully'}), 201
 
 
 # UNFOLLOW
 
 @app.route('/api/unfollow', methods=['POST'])
 def unfollow_user():
-    data = request.get_json()
-    follower_id = data.get('follower_id')
-    followed_id = data.get('followed_id')
+    data = request.json
+    user_identifier = data.get('identifier')  # The identifier of the user who is performing the unfollow action
+    followed_id = data.get('followed_id')  # The ID of the user being unfollowed
 
-    if not follower_id or not followed_id:
-        return jsonify({'error': 'Missing follower_id or followed_id'}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+    # Get the user ID of the follower using the identifier (email)
+    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
+    follower_id = cursor.fetchone()
 
-        # Delete follow relationship
-        cursor.execute(
-            "DELETE FROM follows WHERE follower_id = %s AND followed_id = %s",
-            (follower_id, followed_id)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
+    if follower_id is None:
+        return jsonify({'error': 'Follower not found'}), 404
 
-        return jsonify({'message': 'User unfollowed successfully'}), 200
+    # Delete the follow relationship from the follows table
+    cursor.execute(
+        "DELETE FROM follows WHERE follower_id = %s AND followed_id = %s",
+        (follower_id, followed_id)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-    except Exception as e:
-        print(f"Error unfollowing user: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
+    return jsonify({'message': 'Unfollowed successfully'}), 200
+
 
 
 
