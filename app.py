@@ -1319,27 +1319,30 @@ def get_feedback(email):
 @app.route('/api/users', methods=['GET'])
 def get_users():
     search = request.args.get('search', '').strip()
-    
-    # If the search query is empty, return an empty list
+    current_user_id = int(request.args.get('current_user_id'))
+
     if not search:
         return jsonify([])
 
     query = """
-    SELECT id, email, name, username FROM users
-    WHERE name ILIKE %s OR username ILIKE %s
-    ORDER BY name ASC
+    SELECT u.id, u.email, u.name, u.username,
+    EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = %s AND f.followed_id = u.id) AS "isFollowing"
+    FROM users u
+    WHERE u.name ILIKE %s OR u.username ILIKE %s
+    ORDER BY u.name ASC
     """
-    
-    params = [f"%{search}%", f"%{search}%"]
-    
+
+    params = [current_user_id, f"%{search}%", f"%{search}%"]
+
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(query, params)
     users = cursor.fetchall()
     cursor.close()
     conn.close()
-    
+
     return jsonify(users)
+
 
 
 
