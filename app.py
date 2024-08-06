@@ -1312,6 +1312,34 @@ def get_feedback(email):
 
 
 
+# SOCIAL PART
+
+# ADD FRIENDS
+
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    search = request.args.get('search', '').strip()
+    
+    # If the search query is empty, return an empty list
+    if not search:
+        return jsonify([])
+
+    query = """
+    SELECT id, email, name, username FROM users
+    WHERE name ILIKE %s OR username ILIKE %s
+    ORDER BY name ASC
+    """
+    
+    params = [f"%{search}%", f"%{search}%"]
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(query, params)
+    users = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    return jsonify(users)
 
 
 
