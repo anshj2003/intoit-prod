@@ -1434,60 +1434,7 @@ def block_user():
     return jsonify({'message': 'User blocked successfully'}), 201
 
 
-# UNBLOCK
 
-@app.route('/api/unblock', methods=['POST'])
-def unblock_user():
-    data = request.json
-    user_identifier = data.get('identifier')
-    blocked_id = data.get('blocked_id')
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Get the user ID of the blocker using the identifier (email)
-    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
-    blocker_id = cursor.fetchone()
-
-    if blocker_id is None:
-        return jsonify({'error': 'Blocker not found'}), 404
-
-    # Delete the block relationship from the blocked_users table
-    cursor.execute(
-        "DELETE FROM blocked_users WHERE blocker_id = %s AND blocked_id = %s",
-        (blocker_id, blocked_id)
-    )
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    return jsonify({'message': 'User unblocked successfully'}), 200
-
-# GET BLOCKED
-
-@app.route('/api/blocked_users', methods=['GET'])
-def get_blocked_users():
-    user_identifier = request.args.get('identifier')
-
-    # Fetch the user ID of the requesting user using the identifier (email)
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
-    result = cursor.fetchone()
-    
-    if not result:
-        return jsonify({'error': 'User not found'}), 404
-    
-    user_id = result[0]
-
-    # Fetch the list of blocked user IDs for the requesting user
-    cursor.execute("SELECT blocked_id FROM blocked_users WHERE blocker_id = %s", (user_id,))
-    blocked_user_ids = [row[0] for row in cursor.fetchall()]
-    
-    cursor.close()
-    conn.close()
-
-    return jsonify(blocked_user_ids)
 
 
 
