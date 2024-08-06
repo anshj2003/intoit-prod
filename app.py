@@ -550,12 +550,14 @@ def update_user():
     gender = data.get('gender')
     relationship_status = data.get('relationship_status')
     location = data.get('location')
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
     username = data.get('username')
 
     if not email:
         return jsonify({'status': 'Email is required'}), 400
     
-    print(f"Received data for update: email={email}, birthday={birthday}, gender={gender}, relationship_status={relationship_status}, location={location}, username={username}")
+    print(f"Received data for update: email={email}, birthday={birthday}, gender={gender}, relationship_status={relationship_status}, location={location}, latitude={latitude}, longitude={longitude}, username={username}")
     
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -576,6 +578,12 @@ def update_user():
     if location:
         updates.append('location = %s')
         params.append(location)
+    if latitude:
+        updates.append('latitude = %s')
+        params.append(latitude)
+    if longitude:
+        updates.append('longitude = %s')
+        params.append(longitude)
     if username:
         updates.append('username = %s')
         params.append(username)
@@ -593,6 +601,7 @@ def update_user():
     cursor.close()
     conn.close()
     return jsonify({'status': 'User information updated successfully!'}), 200
+
 
 
 
@@ -1481,6 +1490,9 @@ def get_following_been_there():
     conn.close()
 
     return jsonify(been_there_entries)
+
+
+# FRIENDS LOCATIONS
 
 
 
