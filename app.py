@@ -1403,36 +1403,30 @@ def unfollow_user():
 
     return jsonify({'message': 'Unfollowed successfully'}), 200
 
+# KEEP FOLLOWING
 
-# BLOCK
-
-@app.route('/api/block', methods=['POST'])
-def block_user():
-    data = request.json
-    user_identifier = data.get('identifier')
-    blocked_id = data.get('blocked_id')
+@app.route('/api/following', methods=['GET'])
+def get_following():
+    user_identifier = request.args.get('identifier')
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-    # Get the user ID of the blocker using the identifier (email)
+    # Get the user ID of the follower using the identifier (email)
     cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
-    blocker_id = cursor.fetchone()
+    follower_id = cursor.fetchone()
 
-    if blocker_id is None:
-        return jsonify({'error': 'Blocker not found'}), 404
+    if follower_id is None:
+        return jsonify([])
 
-    # Insert the block relationship into the blocked_users table
-    cursor.execute(
-        "INSERT INTO blocked_users (blocker_id, blocked_id) VALUES (%s, %s)",
-        (blocker_id, blocked_id)
-    )
-    conn.commit()
+    # Get the list of followed user IDs
+    cursor.execute("SELECT followed_id FROM follows WHERE follower_id = %s", (follower_id,))
+    followed_ids = cursor.fetchall()
+
     cursor.close()
     conn.close()
 
-    return jsonify({'message': 'User blocked successfully'}), 201
-
+    return jsonify([follow['followed_id'] for follow in followed_ids])
 
 
 
