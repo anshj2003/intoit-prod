@@ -1549,9 +1549,27 @@ def update_sharing():
 
     if result is None:
         print("User not found")
+        cursor.close()
+        conn.close()
         return jsonify({'status': 'User not found'}), 404
 
     user_id = result[0]  # Accessing the first element of the tuple
+
+    # Debug: Print user_id
+    print(f"User ID for identifier {identifier} is {user_id}")
+
+    # Check if the follow relationship exists
+    cursor.execute(
+        "SELECT * FROM follows WHERE follower_id = %s AND followed_id = %s",
+        (user_id, friend_id)
+    )
+    follow_exists = cursor.fetchone()
+
+    if follow_exists is None:
+        print(f"No follow relationship exists between user_id {user_id} and friend_id {friend_id}")
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'Follow relationship not found'}), 404
 
     # Update the sharing location status in the follows table
     cursor.execute(
@@ -1565,6 +1583,7 @@ def update_sharing():
 
     print("Location sharing status updated successfully")
     return jsonify({'status': 'Location sharing status updated successfully!'}), 200
+
 
 
 
