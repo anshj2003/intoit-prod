@@ -1525,6 +1525,7 @@ def get_mutual_friends():
 
     return jsonify(mutual_friends)
 
+
 @app.route('/api/update_sharing', methods=['POST'])
 def update_sharing():
     data = request.json
