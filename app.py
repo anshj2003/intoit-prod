@@ -1510,9 +1510,9 @@ def get_mutual_friends():
         return jsonify({'status': 'User not found'}), 404
     user_id = result['id']
 
-    # Get mutual friends' ids and locations
+    # Get mutual friends' ids, locations, and sharing status
     cursor.execute("""
-        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude
+        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f1.is_sharing_location
         FROM follows f1
         JOIN follows f2 ON f1.followed_id = f2.follower_id
         JOIN users u ON u.id = f2.followed_id
@@ -1525,41 +1525,39 @@ def get_mutual_friends():
 
     return jsonify(mutual_friends)
 
-@app.route('/api/update_location_sharing', methods=['POST'])
-def update_location_sharing():
+@app.route('/api/update_sharing', methods=['POST'])
+def update_sharing():
     data = request.json
-    user_identifier = data.get('user_identifier')
+    identifier = data.get('identifier')
     friend_id = data.get('friend_id')
     is_sharing = data.get('is_sharing')
 
-    if not user_identifier or friend_id is None or is_sharing is None:
-        return jsonify({'status': 'Missing required parameters'}), 400
+    if not identifier or friend_id is None:
+        return jsonify({'status': 'Identifier and friend_id are required'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
     # Get user_id of the requesting user
-    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
+    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
     result = cursor.fetchone()
     if not result:
-        cursor.close()
-        conn.close()
         return jsonify({'status': 'User not found'}), 404
-    
-    user_id = result[0]  # Access the first element of the tuple
+    user_id = result['id']
 
-    # Update the location sharing status
+    # Update the is_sharing_location in the follows table
     cursor.execute("""
         UPDATE follows
-        SET is_sharing = %s
+        SET is_sharing_location = %s
         WHERE follower_id = %s AND followed_id = %s
     """, (is_sharing, user_id, friend_id))
-
     conn.commit()
+
     cursor.close()
     conn.close()
 
-    return jsonify({'status': 'Location sharing status updated successfully!'}), 200
+    return jsonify({'status': 'Location sharing updated successfully!'})
+
 
 
 
