@@ -1531,10 +1531,10 @@ def update_sharing():
     data = request.json
     identifier = data.get('identifier')
     friend_id = data.get('friend_id')
-    is_sharing = data.get('is_sharing')
+    is_sharing_location = data.get('is_sharing_location')
 
-    if not identifier or friend_id is None:
-        return jsonify({'status': 'Identifier and friend_id are required'}), 400
+    if not identifier or not friend_id or is_sharing_location is None:
+        return jsonify({'status': 'Invalid request data'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -1542,22 +1542,24 @@ def update_sharing():
     # Get user_id of the requesting user
     cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
     result = cursor.fetchone()
-    if not result:
+
+    if result is None:
         return jsonify({'status': 'User not found'}), 404
-    user_id = result['id']
 
-    # Update the is_sharing_location in the follows table
-    cursor.execute("""
-        UPDATE follows
-        SET is_sharing_location = %s
-        WHERE follower_id = %s AND followed_id = %s
-    """, (is_sharing, user_id, friend_id))
+    user_id = result[0]  # Accessing the first element of the tuple
+
+    # Update the sharing location status in the follows table
+    cursor.execute(
+        "UPDATE follows SET is_sharing_location = %s WHERE follower_id = %s AND followed_id = %s",
+        (is_sharing_location, user_id, friend_id)
+    )
+
     conn.commit()
-
     cursor.close()
     conn.close()
 
-    return jsonify({'status': 'Location sharing updated successfully!'})
+    return jsonify({'status': 'Location sharing status updated successfully!'}), 200
+
 
 
 
