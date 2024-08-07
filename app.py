@@ -1515,9 +1515,9 @@ def get_mutual_friends():
         SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f1.is_sharing_location
         FROM follows f1
         JOIN follows f2 ON f1.followed_id = f2.follower_id
-        JOIN users u ON u.id = f2.followed_id
-        WHERE f1.follower_id = %s AND f2.followed_id = %s
-    """, (user_id, user_id))
+        JOIN users u ON u.id = f1.followed_id
+        WHERE f1.follower_id = %s AND f2.followed_id = %s AND f2.follower_id = %s
+    """, (user_id, user_id, user_id))
     mutual_friends = cursor.fetchall()
 
     cursor.close()
@@ -1526,6 +1526,7 @@ def get_mutual_friends():
     print(mutual_friends)
 
     return jsonify(mutual_friends)
+
 
 
 @app.route('/api/update_sharing', methods=['POST'])
