@@ -1525,6 +1525,41 @@ def get_mutual_friends():
 
     return jsonify(mutual_friends)
 
+@app.route('/api/update_location_sharing', methods=['POST'])
+def update_location_sharing():
+    data = request.json
+    identifier = data.get('identifier')
+    friend_id = data.get('friend_id')
+    is_sharing = data.get('is_sharing', False)
+
+    if not identifier or not friend_id:
+        return jsonify({'status': 'Identifier and friend_id are required'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
+    result = cursor.fetchone()
+    if not result:
+        return jsonify({'status': 'User not found'}), 404
+    user_id = result['id']
+
+    if is_sharing:
+        cursor.execute(
+            "INSERT INTO location_sharing (user_id, friend_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+            (user_id, friend_id)
+        )
+    else:
+        cursor.execute(
+            "DELETE FROM location_sharing WHERE user_id = %s AND friend_id = %s",
+            (user_id, friend_id)
+        )
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'Location sharing status updated'}), 200
 
 
 if __name__ == '__main__':
