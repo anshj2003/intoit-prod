@@ -1334,7 +1334,7 @@ def get_users():
         return jsonify([])
 
     query = """
-    SELECT id, email, name, username FROM users
+    SELECT id, email, name, username, is_sharing_location FROM users
     WHERE name ILIKE %s OR username ILIKE %s
     ORDER BY name ASC
     """
