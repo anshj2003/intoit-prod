@@ -1532,32 +1532,35 @@ def update_location_sharing():
     friend_id = data.get('friend_id')
     is_sharing = data.get('is_sharing')
 
-    if not user_identifier or not friend_id:
-        return jsonify({'status': 'User identifier and friend ID are required'}), 400
+    if not user_identifier or friend_id is None or is_sharing is None:
+        return jsonify({'status': 'Missing required parameters'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Get user_id of the user
+    # Get user_id of the requesting user
     cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
     result = cursor.fetchone()
     if not result:
+        cursor.close()
+        conn.close()
         return jsonify({'status': 'User not found'}), 404
-    user_id = result['id']
+    
+    user_id = result[0]  # Access the first element of the tuple
 
-    # Insert or update location sharing status
+    # Update the location sharing status
     cursor.execute("""
-        INSERT INTO location_sharing (user_id, friend_id, is_sharing)
-        VALUES (%s, %s, %s)
-        ON CONFLICT (user_id, friend_id)
-        DO UPDATE SET is_sharing = EXCLUDED.is_sharing
-    """, (user_id, friend_id, is_sharing))
+        UPDATE follows
+        SET is_sharing = %s
+        WHERE follower_id = %s AND followed_id = %s
+    """, (is_sharing, user_id, friend_id))
 
     conn.commit()
     cursor.close()
     conn.close()
 
-    return jsonify({'status': 'Location sharing updated successfully!'}), 200
+    return jsonify({'status': 'Location sharing status updated successfully!'}), 200
+
 
 
 if __name__ == '__main__':
