@@ -1525,93 +1525,40 @@ def get_mutual_friends():
 
     return jsonify(mutual_friends)
 
-
-@app.route('/api/location_sharing', methods=['GET'])
-def get_location_sharing():
-    identifier = request.args.get('identifier')
-    if not identifier:
-        return jsonify({'status': 'Identifier is required'}), 400
-
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-
-    # Get user_id of the requesting user
-    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
-    result = cursor.fetchone()
-    if not result:
-        return jsonify({'status': 'User not found'}), 404
-    user_id = result['id']
-
-    # Get list of friend_ids for whom location is shared
-    cursor.execute("SELECT friend_id FROM location_sharing WHERE user_id = %s", (user_id,))
-    shared_friends = [row['friend_id'] for row in cursor.fetchall()]
-
-    cursor.close()
-    conn.close()
-
-    return jsonify(shared_friends)
-
-@app.route('/api/share_location', methods=['POST'])
-def share_location():
+@app.route('/api/update_location_sharing', methods=['POST'])
+def update_location_sharing():
     data = request.json
-    identifier = data.get('identifier')
+    user_identifier = data.get('user_identifier')
     friend_id = data.get('friend_id')
+    is_sharing = data.get('is_sharing')
 
-    if not identifier or not friend_id:
-        return jsonify({'status': 'Identifier and friend_id are required'}), 400
+    if not user_identifier or not friend_id:
+        return jsonify({'status': 'User identifier and friend ID are required'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Get user_id of the requesting user
-    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
+    # Get user_id of the user
+    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
     result = cursor.fetchone()
     if not result:
         return jsonify({'status': 'User not found'}), 404
     user_id = result['id']
 
-    # Add the friend to location sharing
+    # Insert or update location sharing status
     cursor.execute("""
-        INSERT INTO location_sharing (user_id, friend_id)
-        VALUES (%s, %s)
-        ON CONFLICT DO NOTHING
-    """, (user_id, friend_id))
+        INSERT INTO location_sharing (user_id, friend_id, is_sharing)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (user_id, friend_id)
+        DO UPDATE SET is_sharing = EXCLUDED.is_sharing
+    """, (user_id, friend_id, is_sharing))
 
     conn.commit()
     cursor.close()
     conn.close()
 
-    return jsonify({'status': 'Location sharing enabled'}), 200
+    return jsonify({'status': 'Location sharing updated successfully!'}), 200
 
-@app.route('/api/unshare_location', methods=['POST'])
-def unshare_location():
-    data = request.json
-    identifier = data.get('identifier')
-    friend_id = data.get('friend_id')
-
-    if not identifier or not friend_id:
-        return jsonify({'status': 'Identifier and friend_id are required'}), 400
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Get user_id of the requesting user
-    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
-    result = cursor.fetchone()
-    if not result:
-        return jsonify({'status': 'User not found'}), 404
-    user_id = result['id']
-
-    # Remove the friend from location sharing
-    cursor.execute("""
-        DELETE FROM location_sharing WHERE user_id = %s AND friend_id = %s
-    """, (user_id, friend_id))
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    return jsonify({'status': 'Location sharing disabled'}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
