@@ -1533,7 +1533,11 @@ def update_sharing():
     friend_id = data.get('friend_id')
     is_sharing_location = data.get('is_sharing_location')
 
+    # Debug: Print received data
+    print(f"Received data: identifier={identifier}, friend_id={friend_id}, is_sharing_location={is_sharing_location}")
+
     if not identifier or not friend_id or is_sharing_location is None:
+        print("Invalid request data")
         return jsonify({'status': 'Invalid request data'}), 400
 
     conn = get_db_connection()
@@ -1544,6 +1548,7 @@ def update_sharing():
     result = cursor.fetchone()
 
     if result is None:
+        print("User not found")
         return jsonify({'status': 'User not found'}), 404
 
     user_id = result[0]  # Accessing the first element of the tuple
@@ -1558,7 +1563,9 @@ def update_sharing():
     cursor.close()
     conn.close()
 
+    print("Location sharing status updated successfully")
     return jsonify({'status': 'Location sharing status updated successfully!'}), 200
+
 
 
 
