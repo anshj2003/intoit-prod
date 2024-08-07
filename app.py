@@ -1494,6 +1494,36 @@ def get_following_been_there():
 
 # FRIENDS LOCATIONS
 
+@app.route('/api/mutual_friends', methods=['GET'])
+def get_mutual_friends():
+    identifier = request.args.get('identifier')
+    if not identifier:
+        return jsonify({'status': 'Identifier is required'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Get user_id of the requesting user
+    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
+    result = cursor.fetchone()
+    if not result:
+        return jsonify({'status': 'User not found'}), 404
+    user_id = result['id']
+
+    # Get mutual friends' ids and locations
+    cursor.execute("""
+        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude
+        FROM follows f1
+        JOIN follows f2 ON f1.followed_id = f2.follower_id
+        JOIN users u ON u.id = f2.followed_id
+        WHERE f1.follower_id = %s AND f2.followed_id = %s
+    """, (user_id, user_id))
+    mutual_friends = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(mutual_friends)
 
 
 
