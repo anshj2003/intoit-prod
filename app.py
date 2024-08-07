@@ -1523,7 +1523,7 @@ def get_mutual_friends():
     cursor.close()
     conn.close()
 
-    print(jsonify(mutual_friends))
+    print(mutual_friends)
 
     return jsonify(mutual_friends)
 
