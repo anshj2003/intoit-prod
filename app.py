@@ -1510,14 +1510,15 @@ def get_mutual_friends():
         return jsonify({'status': 'User not found'}), 404
     user_id = result['id']
 
-    # Get mutual friends' ids and locations
+    # Get mutual friends' ids and locations, as well as location sharing status
     cursor.execute("""
-        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude
+        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude,
+               EXISTS (SELECT 1 FROM location_sharing ls WHERE ls.user_id = %s AND ls.friend_id = u.id) AS is_location_shared
         FROM follows f1
         JOIN follows f2 ON f1.followed_id = f2.follower_id
         JOIN users u ON u.id = f2.followed_id
         WHERE f1.follower_id = %s AND f2.followed_id = %s
-    """, (user_id, user_id))
+    """, (user_id, user_id, user_id))
     mutual_friends = cursor.fetchall()
 
     cursor.close()
@@ -1525,62 +1526,46 @@ def get_mutual_friends():
 
     return jsonify(mutual_friends)
 
-@app.route('/api/share_location', methods=['POST'])
-def share_location():
+@app.route('/api/location_sharing', methods=['POST'])
+def add_location_sharing():
     data = request.json
-    user_identifier = data.get('user_id')
+    user_id = data.get('user_id')
     friend_id = data.get('friend_id')
 
-    if not user_identifier or not friend_id:
-        return jsonify({'status': 'User identifier and friend_id are required'}), 400
+    if not user_id or not friend_id:
+        return jsonify({'status': 'User ID and Friend ID are required'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
-    result = cursor.fetchone()
-    if not result:
-        return jsonify({'status': 'User not found'}), 404
-    user_id = result[0]
-
-    cursor.execute(
-        "INSERT INTO location_sharing (user_id, friend_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-        (user_id, friend_id)
-    )
+    cursor.execute("INSERT INTO location_sharing (user_id, friend_id) VALUES (%s, %s) ON CONFLICT DO NOTHING", (user_id, friend_id))
     conn.commit()
 
     cursor.close()
     conn.close()
-    return jsonify({'status': 'Location sharing enabled'}), 200
 
+    return jsonify({'status': 'Location sharing added successfully'}), 200
 
-@app.route('/api/stop_sharing_location', methods=['POST'])
-def stop_sharing_location():
+@app.route('/api/location_sharing', methods=['DELETE'])
+def remove_location_sharing():
     data = request.json
-    user_identifier = data.get('user_id')
+    user_id = data.get('user_id')
     friend_id = data.get('friend_id')
 
-    if not user_identifier or not friend_id:
-        return jsonify({'status': 'User identifier and friend_id are required'}), 400
+    if not user_id or not friend_id:
+        return jsonify({'status': 'User ID and Friend ID are required'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT id FROM users WHERE email = %s", (user_identifier,))
-    result = cursor.fetchone()
-    if not result:
-        return jsonify({'status': 'User not found'}), 404
-    user_id = result[0]
-
-    cursor.execute(
-        "DELETE FROM location_sharing WHERE user_id = %s AND friend_id = %s",
-        (user_id, friend_id)
-    )
+    cursor.execute("DELETE FROM location_sharing WHERE user_id = %s AND friend_id = %s", (user_id, friend_id))
     conn.commit()
 
     cursor.close()
     conn.close()
-    return jsonify({'status': 'Location sharing disabled'}), 200
+
+    return jsonify({'status': 'Location sharing removed successfully'}), 200
+
 
 
 if __name__ == '__main__':
