@@ -1507,17 +1507,41 @@ def get_mutual_friends():
     cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
     result = cursor.fetchone()
     if not result:
+        cursor.close()
+        conn.close()
         return jsonify({'status': 'User not found'}), 404
+
     user_id = result['id']
 
-    # Get mutual friends' ids, locations, and sharing status
-    cursor.execute("""
-        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f1.is_sharing_location
-        FROM follows f1
-        JOIN follows f2 ON f1.followed_id = f2.follower_id
-        JOIN users u ON u.id = f1.followed_id
-        WHERE f1.follower_id = %s AND f2.followed_id = %s AND f2.follower_id = %s
-    """, (user_id, user_id, user_id))
+    # Get users that the requesting user follows
+    cursor.execute("SELECT followed_id FROM follows WHERE follower_id = %s", (user_id,))
+    following = cursor.fetchall()
+
+    following_ids = {f['followed_id'] for f in following}
+
+    # Get users that follow the requesting user
+    cursor.execute("SELECT follower_id FROM follows WHERE followed_id = %s", (user_id,))
+    followers = cursor.fetchall()
+
+    follower_ids = {f['follower_id'] for f in followers}
+
+    # Find mutual friends (intersection of following and followers)
+    mutual_ids = following_ids.intersection(follower_ids)
+
+    if not mutual_ids:
+        cursor.close()
+        conn.close()
+        return jsonify([])  # Return empty list if no mutual friends found
+
+    # Fetch mutual friends' details including is_sharing_location
+    format_strings = ','.join(['%s'] * len(mutual_ids))
+    cursor.execute(f"""
+        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f.is_sharing_location
+        FROM users u
+        JOIN follows f ON u.id = f.followed_id
+        WHERE u.id IN ({format_strings}) AND f.follower_id = %s
+    """, tuple(mutual_ids) + (user_id,))
+
     mutual_friends = cursor.fetchall()
 
     cursor.close()
@@ -1526,6 +1550,7 @@ def get_mutual_friends():
     print(mutual_friends)
 
     return jsonify(mutual_friends)
+
 
 
 
