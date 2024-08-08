@@ -1798,6 +1798,8 @@ def get_been_there_entries():
     entries = cursor.fetchall()
     cursor.close()
     conn.close()
+
+    print(entries)
     
     return jsonify(entries)
 
@@ -1823,6 +1825,8 @@ def get_want_to_go_entries():
     entries = cursor.fetchall()
     cursor.close()
     conn.close()
+
+    print(entries)
     
     return jsonify(entries)
 
