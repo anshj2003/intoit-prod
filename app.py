@@ -1625,7 +1625,110 @@ def update_sharing():
 
 
 
+# BLOCK
 
+@app.route('/api/block', methods=['POST'])
+def block_user():
+    data = request.json
+    identifier = data.get('identifier')
+    blocked_id = data.get('blocked_id')
+
+    if not identifier or not blocked_id:
+        return jsonify({'status': 'Invalid request data'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Get user_id of the requesting user
+    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
+    result = cursor.fetchone()
+    if result is None:
+        return jsonify({'status': 'User not found'}), 404
+
+    blocker_id = result[0]
+
+    # Insert into blocks table
+    cursor.execute("""
+        INSERT INTO blocks (blocker_id, blocked_id)
+        VALUES (%s, %s)
+        ON CONFLICT (blocker_id, blocked_id) DO NOTHING
+    """, (blocker_id, blocked_id))
+
+    # Unfollow each other
+    cursor.execute("""
+        DELETE FROM follows WHERE (follower_id = %s AND followed_id = %s)
+        OR (follower_id = %s AND followed_id = %s)
+    """, (blocker_id, blocked_id, blocked_id, blocker_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'User blocked successfully!'}), 200
+
+@app.route('/api/unblock', methods=['POST'])
+def unblock_user():
+    data = request.json
+    identifier = data.get('identifier')
+    blocked_id = data.get('blocked_id')
+
+    if not identifier or not blocked_id:
+        return jsonify({'status': 'Invalid request data'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Get user_id of the requesting user
+    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
+    result = cursor.fetchone()
+    if result is None:
+        return jsonify({'status': 'User not found'}), 404
+
+    blocker_id = result[0]
+
+    # Delete from blocks table
+    cursor.execute("""
+        DELETE FROM blocks WHERE blocker_id = %s AND blocked_id = %s
+    """, (blocker_id, blocked_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'User unblocked successfully!'}), 200
+
+@app.route('/api/blocked_users', methods=['GET'])
+def get_blocked_users():
+    identifier = request.args.get('identifier')
+    if not identifier:
+        return jsonify({'status': 'Identifier is required'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Get user_id of the requesting user
+    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
+    result = cursor.fetchone()
+    if not result:
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'User not found'}), 404
+
+    user_id = result['id']
+
+    # Get blocked users
+    cursor.execute("""
+        SELECT u.id, u.email, u.name, u.username
+        FROM blocks b
+        JOIN users u ON b.blocked_id = u.id
+        WHERE b.blocker_id = %s
+    """, (user_id,))
+    blocked_users = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(blocked_users)
 
 
 
