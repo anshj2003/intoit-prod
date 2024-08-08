@@ -1536,11 +1536,15 @@ def get_mutual_friends():
     # Fetch mutual friends' details including is_sharing_location
     format_strings = ','.join(['%s'] * len(mutual_ids))
     cursor.execute(f"""
-        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f.is_sharing_location
+        SELECT u.id, u.email, u.name, u.username, 
+               CASE WHEN f1.is_sharing_location THEN u.latitude ELSE NULL END AS latitude,
+               CASE WHEN f1.is_sharing_location THEN u.longitude ELSE NULL END AS longitude,
+               f1.is_sharing_location
         FROM users u
-        JOIN follows f ON u.id = f.followed_id
-        WHERE u.id IN ({format_strings}) AND f.follower_id = %s
-    """, tuple(mutual_ids) + (user_id,))
+        JOIN follows f1 ON u.id = f1.followed_id AND f1.follower_id = %s
+        JOIN follows f2 ON u.id = f2.follower_id AND f2.followed_id = %s
+        WHERE u.id IN ({format_strings})
+    """, (user_id, user_id) + tuple(mutual_ids))
 
     mutual_friends = cursor.fetchall()
 
@@ -1550,6 +1554,7 @@ def get_mutual_friends():
     print(mutual_friends)
 
     return jsonify(mutual_friends)
+
 
 
 
