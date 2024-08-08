@@ -1328,43 +1328,38 @@ def get_feedback(email):
 @app.route('/api/users', methods=['GET'])
 def get_users():
     search = request.args.get('search', '').strip()
-    identifier = request.args.get('identifier', '').strip()
-    
-    if not search or not identifier:
-        return jsonify([])
+    identifier = request.args.get('identifier')
+
+    if not identifier:
+        return jsonify({'status': 'Identifier is required'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-    # Get the user ID of the requester
+    # Get user_id of the requesting user
     cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
-    requester_result = cursor.fetchone()
-
-    if not requester_result:
+    result = cursor.fetchone()
+    if not result:
         return jsonify({'status': 'User not found'}), 404
+    user_id = result['id']
 
-    requester_id = requester_result['id']
+    # If the search query is empty, return an empty list
+    if not search:
+        return jsonify([])
 
-    # Get the list of user IDs that have blocked the requester
-    cursor.execute("""
-        SELECT blocker_id 
-        FROM blocks 
-        WHERE blocked_id = %s
-    """, (requester_id,))
-    blocked_by = cursor.fetchall()
-    blocked_by_ids = [block['blocker_id'] for block in blocked_by]
-
-    # Search users excluding those who blocked the requester
     query = """
-    SELECT id, email, name, username 
-    FROM users
+    SELECT id, email, name, username FROM users
     WHERE (name ILIKE %s OR username ILIKE %s)
-    AND id NOT IN %s
+    AND id NOT IN (
+        SELECT blocked_id FROM blocks WHERE blocker_id = %s
+        UNION
+        SELECT blocker_id FROM blocks WHERE blocked_id = %s
+    )
     ORDER BY name ASC
     """
     
-    params = [f"%{search}%", f"%{search}%", tuple(blocked_by_ids)]
-
+    params = [f"%{search}%", f"%{search}%", user_id, user_id]
+    
     cursor.execute(query, params)
     users = cursor.fetchall()
     cursor.close()
