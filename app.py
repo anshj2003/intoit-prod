@@ -1814,7 +1814,7 @@ def get_want_to_go_entries():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute("""
-        SELECT wt.id, wt.user_id, wt.bar_id, wt.comments, u.name AS user_name, b.name AS bar_name
+        SELECT wt.id, wt.user_id, wt.bar_id, u.name AS user_name, b.name AS bar_name
         FROM want_to_go wt
         JOIN users u ON wt.user_id = u.id
         JOIN bars b ON wt.bar_id = b.id
@@ -1825,6 +1825,7 @@ def get_want_to_go_entries():
     conn.close()
     
     return jsonify(entries)
+
 
 
 if __name__ == '__main__':
