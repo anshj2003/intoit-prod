@@ -1777,6 +1777,55 @@ def get_follow_counts():
     })
 
 
+# FRIEND BEEN THERE
+
+@app.route('/api/been_there', methods=['GET'])
+def get_been_there_entries():
+    user_id = request.args.get('user_id')
+    
+    if not user_id:
+        return jsonify({'status': 'User ID is required'}), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("""
+        SELECT bt.id, bt.user_id, bt.bar_id, bt.rating, bt.comments, u.name AS user_name, b.name AS bar_name
+        FROM been_there bt
+        JOIN users u ON bt.user_id = u.id
+        JOIN bars b ON bt.bar_id = b.id
+        WHERE bt.user_id = %s
+    """, (user_id,))
+    entries = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    return jsonify(entries)
+
+
+# FRIEND WANT TO GO
+
+@app.route('/api/want_to_go', methods=['GET'])
+def get_want_to_go_entries():
+    user_id = request.args.get('user_id')
+    
+    if not user_id:
+        return jsonify({'status': 'User ID is required'}), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("""
+        SELECT wt.id, wt.user_id, wt.bar_id, wt.comments, u.name AS user_name, b.name AS bar_name
+        FROM want_to_go wt
+        JOIN users u ON wt.user_id = u.id
+        JOIN bars b ON wt.bar_id = b.id
+        WHERE wt.user_id = %s
+    """, (user_id,))
+    entries = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    return jsonify(entries)
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
