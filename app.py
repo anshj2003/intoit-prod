@@ -1328,37 +1328,36 @@ def get_feedback(email):
 @app.route('/api/users', methods=['GET'])
 def get_users():
     search = request.args.get('search', '').strip()
-    identifier = request.args.get('identifier')
-
+    identifier = request.args.get('identifier').strip()
+    
     if not identifier:
         return jsonify({'status': 'Identifier is required'}), 400
+
+    # If the search query is empty, return an empty list
+    if not search:
+        return jsonify([])
 
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-    # Get user_id of the requesting user
+    # Get the user ID of the current user
     cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
     result = cursor.fetchone()
     if not result:
         return jsonify({'status': 'User not found'}), 404
     user_id = result['id']
 
-    # If the search query is empty, return an empty list
-    if not search:
-        return jsonify([])
-
+    # Modify the query to exclude users who have blocked the current user
     query = """
     SELECT id, email, name, username FROM users
     WHERE (name ILIKE %s OR username ILIKE %s)
     AND id NOT IN (
-        SELECT blocked_id FROM blocks WHERE blocker_id = %s
-        UNION
         SELECT blocker_id FROM blocks WHERE blocked_id = %s
     )
     ORDER BY name ASC
     """
     
-    params = [f"%{search}%", f"%{search}%", user_id, user_id]
+    params = [f"%{search}%", f"%{search}%", user_id]
     
     cursor.execute(query, params)
     users = cursor.fetchall()
