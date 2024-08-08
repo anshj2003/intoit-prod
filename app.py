@@ -1747,6 +1747,35 @@ def get_blocked_users():
 
     return jsonify(blocked_users)
 
+# FOLLOWER FOLLOWING COUNT
+
+@app.route('/api/follow_counts', methods=['GET'])
+def get_follow_counts():
+    identifier = request.args.get('identifier')
+    
+    if not identifier:
+        return jsonify({'status': 'Identifier is required'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
+    user_id = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM follows WHERE followed_id = %s", (user_id,))
+    follower_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM follows WHERE follower_id = %s", (user_id,))
+    following_count = cursor.fetchone()[0]
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({
+        'follower_count': follower_count,
+        'following_count': following_count
+    })
+
 
 
 if __name__ == '__main__':
