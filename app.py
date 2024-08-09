@@ -1347,17 +1347,18 @@ def get_users():
         return jsonify({'status': 'User not found'}), 404
     user_id = result['id']
 
-    # Modify the query to exclude users who have blocked the current user
+    # Modify the query to exclude the current user and users who have blocked the current user
     query = """
     SELECT id, email, name, username FROM users
     WHERE (name ILIKE %s OR username ILIKE %s)
+    AND id != %s  -- Exclude the current user
     AND id NOT IN (
         SELECT blocker_id FROM blocks WHERE blocked_id = %s
     )
     ORDER BY name ASC
     """
     
-    params = [f"%{search}%", f"%{search}%", user_id]
+    params = [f"%{search}%", f"%{search}%", user_id, user_id]
     
     cursor.execute(query, params)
     users = cursor.fetchall()
@@ -1365,6 +1366,7 @@ def get_users():
     conn.close()
     
     return jsonify(users)
+
 
 
 
