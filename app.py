@@ -1552,16 +1552,10 @@ def get_mutual_friends():
         conn.close()
         return jsonify([])  # Return empty list if no mutual friends found
 
-    # Fetch mutual friends' details including is_sharing_location and bar details
+    # Fetch mutual friends' details including is_sharing_location
     format_strings = ','.join(['%s'] * len(mutual_ids))
     cursor.execute(f"""
-        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f.is_sharing_location,
-        (
-            SELECT b.name FROM bars b
-            JOIN been_there bt ON b.id = bt.bar_id
-            WHERE bt.user_id = u.id
-            ORDER BY bt.id DESC LIMIT 1
-        ) AS current_bar_name
+        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f.is_sharing_location
         FROM users u
         JOIN follows f ON u.id = f.followed_id
         WHERE u.id IN ({format_strings}) AND f.follower_id = %s
@@ -1579,12 +1573,25 @@ def get_mutual_friends():
         if not (sharing_status and sharing_status['is_sharing_location']):
             friend['latitude'] = None
             friend['longitude'] = None
-            friend['current_bar_name'] = None
+        else:
+            # Get nearby bar information
+            if friend['latitude'] and friend['longitude']:
+                cursor.execute("""
+                    SELECT name FROM bars
+                    WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint(%s, %s), 4326), 60)
+                    ORDER BY ST_Distance(geom, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) ASC
+                    LIMIT 1
+                """, (friend['longitude'], friend['latitude'], friend['longitude'], friend['latitude']))
+                bar = cursor.fetchone()
+                if bar:
+                    friend['bar_name'] = bar['name']
+                else:
+                    friend['bar_name'] = None
+            else:
+                friend['bar_name'] = None
 
     cursor.close()
     conn.close()
-
-    print(mutual_friends)
 
     return jsonify(mutual_friends)
 
