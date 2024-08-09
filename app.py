@@ -668,12 +668,13 @@ def delete_user():
 def get_bars():
     page = int(request.args.get('page', 1))
     per_page = 30
-    #per_page = int(request.args.get('per_page', 30))
     search = request.args.get('search', '')
     selected_price = request.args.get('selected_price', '')
     selected_distance = float(request.args.get('selected_distance', 0))
     latitude = float(request.args.get('latitude', 0))
     longitude = float(request.args.get('longitude', 0))
+    latitude_delta = float(request.args.get('latitude_delta', 0))  # New parameter
+    longitude_delta = float(request.args.get('longitude_delta', 0))  # New parameter
     selected_genres = request.args.getlist('selected_genres[]')
 
     offset = (page - 1) * per_page
@@ -687,6 +688,7 @@ def get_bars():
     )
     """
 
+    # Modify the query to filter by latitude and longitude boundaries
     query = f"""
     SELECT b.*, {haversine} AS distance
     FROM bars b
@@ -696,13 +698,22 @@ def get_bars():
            OR s.name ILIKE %s OR s.artist ILIKE %s)
     AND (%s = '' OR b.price_signs = %s)
     AND (%s = 0 OR {haversine} < %s)
+    AND (b.latitude BETWEEN %s AND %s)
+    AND (b.longitude BETWEEN %s AND %s)
     """
+
+    # Calculate latitude and longitude bounds
+    lat_min = latitude - (latitude_delta / 2)
+    lat_max = latitude + (latitude_delta / 2)
+    lon_min = longitude - (longitude_delta / 2)
+    lon_max = longitude + (longitude_delta / 2)
 
     params = [
         latitude, longitude, latitude,
         f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%", f"%{search}%",
         selected_price, selected_price,
-        selected_distance, latitude, longitude, latitude, selected_distance
+        selected_distance, latitude, longitude, latitude, selected_distance,
+        lat_min, lat_max, lon_min, lon_max
     ]
 
     if selected_genres:
@@ -734,6 +745,7 @@ def get_bars():
     conn.close()
 
     return jsonify(bars)
+
 
 
 
