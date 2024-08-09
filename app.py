@@ -1552,10 +1552,16 @@ def get_mutual_friends():
         conn.close()
         return jsonify([])  # Return empty list if no mutual friends found
 
-    # Fetch mutual friends' details including is_sharing_location
+    # Fetch mutual friends' details including is_sharing_location and bar details
     format_strings = ','.join(['%s'] * len(mutual_ids))
     cursor.execute(f"""
-        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f.is_sharing_location
+        SELECT u.id, u.email, u.name, u.username, u.latitude, u.longitude, f.is_sharing_location,
+        (
+            SELECT b.name FROM bars b
+            JOIN been_there bt ON b.id = bt.bar_id
+            WHERE bt.user_id = u.id
+            ORDER BY bt.id DESC LIMIT 1
+        ) AS current_bar_name
         FROM users u
         JOIN follows f ON u.id = f.followed_id
         WHERE u.id IN ({format_strings}) AND f.follower_id = %s
@@ -1563,7 +1569,7 @@ def get_mutual_friends():
 
     mutual_friends = cursor.fetchall()
 
-    # For each mutual friend, check the closest bar and add it to the response
+    # Filter mutual friends to set location details to None if not sharing
     for friend in mutual_friends:
         cursor.execute("""
             SELECT is_sharing_location FROM follows
@@ -1573,22 +1579,12 @@ def get_mutual_friends():
         if not (sharing_status and sharing_status['is_sharing_location']):
             friend['latitude'] = None
             friend['longitude'] = None
-        else:
-            # Find the closest bar if sharing location
-            cursor.execute("""
-                SELECT name FROM bars
-                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
-                ORDER BY ((latitude - %s) * (latitude - %s) + (longitude - %s) * (longitude - %s)) ASC
-                LIMIT 1
-            """, (friend['latitude'], friend['latitude'], friend['longitude'], friend['longitude']))
-            closest_bar = cursor.fetchone()
-            if closest_bar:
-                friend['bar_name'] = closest_bar['name']
-            else:
-                friend['bar_name'] = None
+            friend['current_bar_name'] = None
 
     cursor.close()
     conn.close()
+
+    print(mutual_friends)
 
     return jsonify(mutual_friends)
 
