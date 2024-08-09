@@ -1563,7 +1563,17 @@ def get_mutual_friends():
 
     mutual_friends = cursor.fetchall()
 
-    # Filter mutual friends to set location details to None if not sharing
+    def haversine(lat1, lon1, lat2, lon2):
+        R = 6371e3  # Earth radius in meters
+        phi1 = math.radians(lat1)
+        phi2 = math.radians(lat2)
+        delta_phi = math.radians(lat2 - lat1)
+        delta_lambda = math.radians(lon2 - lon1)
+        a = math.sin(delta_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
+
+    # For each mutual friend, find the closest bar if they are sharing location
     for friend in mutual_friends:
         cursor.execute("""
             SELECT is_sharing_location FROM follows
@@ -1573,25 +1583,26 @@ def get_mutual_friends():
         if not (sharing_status and sharing_status['is_sharing_location']):
             friend['latitude'] = None
             friend['longitude'] = None
+            friend['current_bar'] = None
         else:
-            # Get nearby bar information
+            cursor.execute("SELECT id, name, latitude, longitude FROM bars")
+            bars = cursor.fetchall()
+
+            closest_bar = None
+            min_distance = float('inf')
             if friend['latitude'] and friend['longitude']:
-                cursor.execute("""
-                    SELECT name FROM bars
-                    WHERE ST_DWithin(geom, ST_SetSRID(ST_MakePoint(%s, %s), 4326), 60)
-                    ORDER BY ST_Distance(geom, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) ASC
-                    LIMIT 1
-                """, (friend['longitude'], friend['latitude'], friend['longitude'], friend['latitude']))
-                bar = cursor.fetchone()
-                if bar:
-                    friend['bar_name'] = bar['name']
-                else:
-                    friend['bar_name'] = None
-            else:
-                friend['bar_name'] = None
+                for bar in bars:
+                    distance = haversine(friend['latitude'], friend['longitude'], bar['latitude'], bar['longitude'])
+                    if distance < min_distance:
+                        min_distance = distance
+                        closest_bar = bar['name'] if distance < 15 else None  # Assuming a 15 meter threshold
+
+            friend['current_bar'] = closest_bar
 
     cursor.close()
     conn.close()
+
+    print(mutual_friends)
 
     return jsonify(mutual_friends)
 
