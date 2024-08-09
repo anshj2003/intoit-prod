@@ -1595,7 +1595,7 @@ def get_mutual_friends():
                     distance = haversine(friend['latitude'], friend['longitude'], bar['latitude'], bar['longitude'])
                     if distance < min_distance:
                         min_distance = distance
-                        closest_bar = bar['name'] if distance < 15 else None  # Assuming a 15 meter threshold
+                        closest_bar = bar['name'] if distance < 60 else None  # Assuming a 15 meter threshold
 
             friend['current_bar'] = closest_bar
 
