@@ -1563,7 +1563,7 @@ def get_mutual_friends():
 
     mutual_friends = cursor.fetchall()
 
-    # Filter mutual friends to set location details to None if not sharing
+    # For each mutual friend, check the closest bar and add it to the response
     for friend in mutual_friends:
         cursor.execute("""
             SELECT is_sharing_location FROM follows
@@ -1573,13 +1573,25 @@ def get_mutual_friends():
         if not (sharing_status and sharing_status['is_sharing_location']):
             friend['latitude'] = None
             friend['longitude'] = None
+        else:
+            # Find the closest bar if sharing location
+            cursor.execute("""
+                SELECT name FROM bars
+                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                ORDER BY ((latitude - %s) * (latitude - %s) + (longitude - %s) * (longitude - %s)) ASC
+                LIMIT 1
+            """, (friend['latitude'], friend['latitude'], friend['longitude'], friend['longitude']))
+            closest_bar = cursor.fetchone()
+            if closest_bar:
+                friend['bar_name'] = closest_bar['name']
+            else:
+                friend['bar_name'] = None
 
     cursor.close()
     conn.close()
 
-    print(mutual_friends)
-
     return jsonify(mutual_friends)
+
 
 
 
