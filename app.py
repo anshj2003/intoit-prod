@@ -744,7 +744,7 @@ def get_bars():
 def get_nearby_bars():
     latitude = float(request.args.get('latitude'))
     longitude = float(request.args.get('longitude'))
-    distance_limit = 60  # meters
+    distance_limit = 15  # meters
 
     def haversine(lat1, lon1, lat2, lon2):
         R = 6371e3  # Earth radius in meters
@@ -1595,7 +1595,7 @@ def get_mutual_friends():
                     distance = haversine(friend['latitude'], friend['longitude'], bar['latitude'], bar['longitude'])
                     if distance < min_distance:
                         min_distance = distance
-                        closest_bar = bar['name'] if distance < 60 else None  # Assuming a 15 meter threshold
+                        closest_bar = bar['name'] if distance < 15 else None  # Assuming a 15 meter threshold
 
             friend['current_bar'] = closest_bar
 
