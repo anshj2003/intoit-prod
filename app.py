@@ -1859,6 +1859,9 @@ def get_want_to_go_entries():
     return jsonify(entries)
 
 
+@app.route('/api/latest_version', methods=['GET'])
+def get_latest_version():
+    return jsonify({'latest_version': '1.2.0'})  # Replace with the current version of your app
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
