@@ -1417,6 +1417,43 @@ def get_followers():
 
     return jsonify(followers)
 
+# FOLLOWING FOLLOWING
+
+@app.route('/api/following_users', methods=['GET'])
+def get_following_users():
+    identifier = request.args.get('identifier')
+    if not identifier:
+        return jsonify({'status': 'Identifier is required'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Get user_id of the requesting user
+    cursor.execute("SELECT id FROM users WHERE email = %s", (identifier,))
+    result = cursor.fetchone()
+    if not result:
+        cursor.close()
+        conn.close()
+        return jsonify({'status': 'User not found'}), 404
+
+    user_id = result['id']
+
+    # Fetch users the current user is following
+    cursor.execute("""
+        SELECT u.id, u.email, u.name, u.username
+        FROM follows f
+        JOIN users u ON u.id = f.followed_id
+        WHERE f.follower_id = %s
+        ORDER BY u.name ASC
+    """, (user_id,))
+    
+    following_users = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(following_users)
+
 
 # NOTIFICATION FOLLOWERS
 
