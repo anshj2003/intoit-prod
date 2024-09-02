@@ -1409,7 +1409,7 @@ def get_notifications():
         FROM follows f
         JOIN users u ON u.id = f.follower_id
         WHERE f.followed_id = %s
-        ORDER BY f.followed_at DESC
+        ORDER BY f.created_at DESC
     """, (user_id,))
     
     notifications = cursor.fetchall()
