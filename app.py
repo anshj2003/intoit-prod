@@ -1074,6 +1074,7 @@ def get_been_there():
         JOIN bars b ON bt.bar_id = b.id
         JOIN users u ON bt.user_id = u.id
         WHERE u.email = %s
+        ORDER BY bt.rating DESC
     ''', (email,))
     
     bars = cursor.fetchall()
