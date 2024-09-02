@@ -166,6 +166,8 @@ def update_bar():
     vibe = data.get('vibe')
     line_length = data.get('line_length')
     how_crowded = data.get('how_crowded')
+    bouncer_difficulty = data.get('bouncer_difficulty')
+    ratio = data.get('ratio')
 
     if not bar_id or line_length is None:
         return jsonify({'error': 'bar_id and line_length are required'}), 400
@@ -184,6 +186,14 @@ def update_bar():
         updates.append('how_crowded = %s')
         params.append(how_crowded)
 
+    if bouncer_difficulty is not None:
+        updates.append('bouncer_difficulty = %s')
+        params.append(bouncer_difficulty)
+
+    if ratio is not None:
+        updates.append('ratio = %s')
+        params.append(ratio)
+
     updates.append('line_wait_time = %s')
     params.append(line_length)
 
@@ -197,6 +207,7 @@ def update_bar():
     conn.close()
 
     return jsonify({'status': 'Bar information updated successfully!'}), 200
+
 
 
 
