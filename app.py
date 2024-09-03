@@ -82,7 +82,7 @@ def ai_search():
 
     # Call OpenAI API in a loop
     openai.api_key = OPENAI_KEY
-    max_attempts = 5
+    max_attempts = 10
     attempts = 0
     bar_found = False
     bar_dict = None
