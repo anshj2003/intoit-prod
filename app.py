@@ -93,7 +93,7 @@ def ai_search():
             model="ft:gpt-4o-2024-08-06:personal::A3BdX0ph",
             messages=[
                 {"role": "system", "content": "You are a nightlife guru who recommends bars and clubs based on users' desires."},
-                {"role": "user", "content": f"{query}"}
+                {"role": "user", "content": f"{combined_query}"}
             ],
             max_tokens=150
         )
