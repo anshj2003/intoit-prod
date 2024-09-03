@@ -80,59 +80,67 @@ def ai_search():
 
     print(combined_query)
 
-    # Call OpenAI API
+    # Call OpenAI API in a loop
     openai.api_key = OPENAI_KEY
+    max_attempts = 5
+    attempts = 0
+    bar_found = False
+    bar_dict = None
 
-    response = openai.chat.completions.create(
-        model="ft:gpt-4o-2024-08-06:personal::A3BdX0ph",
-        messages=[
-            {"role": "system", "content": "You are a nightlife guru who recommends bars and clubs based on users' desires."},
-            {"role": "user", "content": f"{combined_query}"}
-        ],
-        max_tokens=150
-    )
+    while not bar_found and attempts < max_attempts:
+        attempts += 1
+        response = openai.chat.completions.create(
+            model="ft:gpt-4o-2024-08-06:personal::A3BdX0ph",
+            messages=[
+                {"role": "system", "content": "You are a nightlife guru who recommends bars and clubs based on users' desires."},
+                {"role": "user", "content": f"{combined_query}"}
+            ],
+            max_tokens=150
+        )
 
-    suggestions = response.choices[0].message.content
-    suggested_bars = [suggestion.strip() for suggestion in suggestions.split(',') if suggestion.strip()]
+        suggestions = response.choices[0].message.content
+        suggested_bars = [suggestion.strip() for suggestion in suggestions.split(',') if suggestion.strip()]
 
-    print("Pre database check:", suggested_bars)
+        print("Pre database check:", suggested_bars)
 
-    # Use ILIKE for case-insensitive matching and pattern matching for partial matches
-    placeholder = ', '.join(['%s'] * len(suggested_bars))
-    cursor.execute(f'SELECT * FROM bars WHERE name ILIKE ANY(ARRAY[{placeholder}]) LIMIT 1', tuple([f'%{bar}%' for bar in suggested_bars]))
-    bars = cursor.fetchall()
+        # Use ILIKE for case-insensitive matching and pattern matching for partial matches
+        placeholder = ', '.join(['%s'] * len(suggested_bars))
+        cursor.execute(f'SELECT * FROM bars WHERE name ILIKE ANY(ARRAY[{placeholder}]) LIMIT 1', tuple([f'%{bar}%' for bar in suggested_bars]))
+        bars = cursor.fetchall()
 
-    if not bars:
+        if bars:
+            bar = bars[0]
+            bar_dict = {
+                "id": bar[0],
+                "name": bar[1],
+                "address": bar[2],
+                "phone_number": bar[3],
+                "description": bar[6],
+                "vibe": float(bar[7]) if bar[7] is not None else None,
+                "type": bar[8],
+                "lineWaitTime": bar[9],
+                "price_signs": bar[15],
+                "price_num": bar[16],
+                "photo": bar[18],
+                "avgMaleAge": bar[10],
+                "avgFemaleAge": bar[11],
+                "percentSingleMen": bar[12],
+                "percentSingleWomen": bar[13],
+                "latitude": bar[23], 
+                "longitude": bar[24],
+                "djsInstagram": bar[25],
+                "ticketLink": bar[26],
+                "enableRequests": bar[27],
+                "website_link": bar[28],
+                "reservation_link": bar[29],
+                "howCrowded": bar[30]
+            }
+            bar_found = True
+
+    if not bar_found:
         cursor.close()
         conn.close()
         return jsonify({'error': 'This happens sometimes, try a different query'}), 400
-
-    bar = bars[0]
-    bar_dict = {
-        "id": bar[0],
-        "name": bar[1],
-        "address": bar[2],
-        "phone_number": bar[3],
-        "description": bar[6],
-        "vibe": float(bar[7]) if bar[7] is not None else None,
-        "type": bar[8],
-        "lineWaitTime": bar[9],
-        "price_signs": bar[15],
-        "price_num": bar[16],
-        "photo": bar[18],
-        "avgMaleAge": bar[10],
-        "avgFemaleAge": bar[11],
-        "percentSingleMen": bar[12],
-        "percentSingleWomen": bar[13],
-        "latitude": bar[23], 
-        "longitude": bar[24],
-        "djsInstagram": bar[25],
-        "ticketLink": bar[26],
-        "enableRequests": bar[27],
-        "website_link": bar[28],
-        "reservation_link": bar[29],
-        "howCrowded": bar[30]
-    }
 
     # Update the AI recommendations database
     import time
@@ -150,6 +158,7 @@ def ai_search():
     conn.close()
 
     return jsonify([bar_dict])
+
 
 
 
