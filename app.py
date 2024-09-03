@@ -84,10 +84,10 @@ def ai_search():
     openai.api_key = OPENAI_KEY
 
     response = openai.chat.completions.create(
-        model="ft:gpt-3.5-turbo-1106:personal:first-intoit:9rfZxmSO",
+        model="ft:gpt-4o-2024-08-06:personal::A3BdX0ph",
         messages=[
             {"role": "system", "content": "You are a nightlife guru who recommends bars and clubs based on users' desires."},
-            {"role": "user", "content": f"Based on the following query, suggest 3 bars near me. Format must be 'bar1', 'bar2', 'bar3' no additional punctuation. Here is the query: {combined_query}"}
+            {"role": "user", "content": f"{combined_query}"}
         ],
         max_tokens=150
     )
