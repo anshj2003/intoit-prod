@@ -1993,7 +1993,7 @@ def get_want_to_go_entries():
 @app.route('/api/latest_version', methods=['GET'])
 def get_latest_version():
     return jsonify({
-        'latest_version': '3.5',
+        'latest_version': '3.0',
         'minimum_supported_version': '3.0',
         'force_update': False  # Set to True if the update is mandatory
     })
