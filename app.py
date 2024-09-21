@@ -1994,7 +1994,7 @@ def get_want_to_go_entries():
 def get_latest_version():
     return jsonify({
         'latest_version': '3.0',
-        'minimum_supported_version': '3.0',
+        'minimum_supported_version': '3.5',
         'force_update': False  # Set to True if the update is mandatory
     })
 
