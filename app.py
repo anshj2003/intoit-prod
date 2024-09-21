@@ -1995,7 +1995,7 @@ def get_latest_version():
     return jsonify({
         'latest_version': '3.5',
         'minimum_supported_version': '3.0',
-        'force_update': True  # Set to True if the update is mandatory
+        'force_update': False  # Set to True if the update is mandatory
     })
 
 if __name__ == '__main__':
