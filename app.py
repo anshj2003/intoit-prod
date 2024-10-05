@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 import threading
 import schedule
 import pandas as pd
+from acrcloud.recognizer import ACRCloudRecognizer
 
 load_dotenv()
 
@@ -1997,6 +1998,72 @@ def get_latest_version():
         'minimum_supported_version': '3.5',
         'force_update': False  # Set to True if the update is mandatory
     })
+
+
+# MUSIC RECOGNITION
+
+# ACRCloud configuration
+acr_config = {
+    'host': 'identify-us-west-2.acrcloud.com',
+    'access_key': 'f6ff5195c687fe2223f552a67b8c1313',
+    'access_secret': '1RkhZAl66HDQAn9cEinYaoNh9n1UgMu4eINjFGGp',
+    'timeout': 10  # seconds
+}
+
+# Initialize ACRCloud recognizer
+acr_recognizer = ACRCloudRecognizer(acr_config)
+
+def acrcloud_process_wav_file(bar_id, file_path):
+    try:
+        # Read .wav file content
+        with open(file_path, 'rb') as f:
+            wav_data = f.read()
+        
+        # Send request to ACRCloud to recognize the song
+        result = acr_recognizer.recognize_by_filebuffer(wav_data, len(wav_data))
+        
+        # Check if the song was recognized
+        if result and 'metadata' in result and 'music' in result['metadata']:
+            music_info = result['metadata']['music'][0]
+            song_name = music_info.get('title', 'Unknown')
+            artist_name = music_info.get('artists', [{}])[0].get('name', 'Unknown')
+            
+            # Insert song into the database
+            acrcloud_insert_song_to_db(bar_id, song_name, artist_name)
+        else:
+            print(f"No song recognized for file: {file_path}")
+    except Exception as e:
+        print(f"Error processing WAV file: {e}")
+
+def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
+    try:
+        # Connect to the PostgreSQL database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Insert the song information into the songs table
+        insert_query = 'INSERT INTO songs (bar_id, name, artist) VALUES (%s, %s, %s)'
+        cursor.execute(insert_query, (bar_id, song_name, artist_name))
+        
+        # Commit the transaction and close the connection
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print(f"Inserted song: '{song_name}' by '{artist_name}' for bar id: {bar_id}")
+    except Exception as e:
+        print(f"Error inserting song into database: {e}")
+
+def acrcloud_main():
+    try:
+        # Simulate incoming file details
+        incoming_signal = "./files/DankDev/19961_0.wav"
+        bar_id = int(incoming_signal.split('_')[0].split('/')[-1])
+        
+        # Process the .wav file to recognize and store the song
+        acrcloud_process_wav_file(bar_id, incoming_signal)
+    except Exception as e:
+        print(f"Error in acrcloud_main function: {e}")
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
