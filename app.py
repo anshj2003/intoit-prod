@@ -2079,7 +2079,7 @@ def monitor_files():
 
 if __name__ == '__main__':
     # Start the file monitoring in a separate thread
-    monitoring_thread = threading.Thread(target=monitor_files, daemon=True)
+    monitoring_thread = threading.Thread(target=monitor_files, daemon=True, args=())
     monitoring_thread.start()
 
     # Run the Flask application
