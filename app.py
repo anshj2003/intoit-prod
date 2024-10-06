@@ -2063,6 +2063,7 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
         print(f"Error inserting song into database: {e}")
 
 def monitor_files():
+    print("starhing")
     while True:
         base_directory = './files'
         for bar_id in os.listdir(base_directory):
