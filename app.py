@@ -2003,6 +2003,9 @@ def get_latest_version():
 # MUSIC RECOGNITION
 
 
+import threading
+
+
 # ACRCloud configuration
 acr_config = {
     'host': 'identify-us-west-2.acrcloud.com',
@@ -2073,8 +2076,13 @@ def monitor_files():
                         except Exception as e:
                             print(f"Error processing file {file_path}: {e}")
         time.sleep(10)
-        
 
 if __name__ == '__main__':
+    # Start the file monitoring in a separate thread
+    monitoring_thread = threading.Thread(target=monitor_files, daemon=True)
+    monitoring_thread.start()
+
+    # Run the Flask application
     app.run(debug=True, host='0.0.0.0', port=5000)
-    monitor_files()
+
+
