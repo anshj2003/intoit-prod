@@ -2026,7 +2026,7 @@ def acrcloud_process_wav_file(bar_id, file_path):
         
         # Send request to ACRCloud to recognize the song
         result = acr_recognizer.recognize_by_filebuffer(wav_data, len(wav_data))
-        result = eval(result)  # Convert string result to dictionary
+        result = json.loads(result)  # Convert JSON string to dictionary
         
         # Check if the song was recognized
         if result and 'metadata' in result and 'music' in result['metadata']:
@@ -2065,9 +2065,14 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
         print(f"Error inserting song into database: {e}", flush=True)
 
 def monitor_files():
+    print("monitor_files() has started.", flush=True)  # Print at the start
     while True:
-        print("Monitoring files...", flush=True)  # Debug statement to indicate the function is running
+        print("Monitoring files...", flush=True)  # Debug statement
         base_directory = './files'
+        if not os.path.exists(base_directory):
+            print(f"Base directory '{base_directory}' does not exist.", flush=True)
+            time.sleep(10)
+            continue
         for bar_id in os.listdir(base_directory):
             bar_directory = os.path.join(base_directory, bar_id)
             if os.path.isdir(bar_directory):
@@ -2080,10 +2085,12 @@ def monitor_files():
                             print(f"Error processing file {file_path}: {e}", flush=True)
         time.sleep(10)
 
-if __name__ == '__main__':
-    # Start the file monitoring in a separate thread
-    monitoring_thread = threading.Thread(target=monitor_files, daemon=True)
+@app.before_first_request
+def start_monitoring_thread():
+    print("Starting monitoring thread...", flush=True)
+    monitoring_thread = threading.Thread(target=monitor_files)
     monitoring_thread.start()
 
-    # Run the Flask application without the reloader
-    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
+if __name__ == '__main__':
+    # Run the Flask application without debug mode
+    app.run(host='0.0.0.0', port=5000, debug=False)
