@@ -15,6 +15,7 @@ import threading
 import schedule
 import pandas as pd
 from acrcloud.recognizer import ACRCloudRecognizer
+import threading
 
 load_dotenv()
 
@@ -2003,7 +2004,7 @@ def get_latest_version():
 # MUSIC RECOGNITION
 
 
-import threading
+
 
 
 # ACRCloud configuration
@@ -2063,8 +2064,8 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
         print(f"Error inserting song into database: {e}")
 
 def monitor_files():
-    print("starhing")
     while True:
+        print("Monitoring files...")  # Debug statement to indicate the function is running
         base_directory = './files'
         for bar_id in os.listdir(base_directory):
             bar_directory = os.path.join(base_directory, bar_id)
@@ -2080,10 +2081,8 @@ def monitor_files():
 
 if __name__ == '__main__':
     # Start the file monitoring in a separate thread
-    monitoring_thread = threading.Thread(target=monitor_files, daemon=True, args=())
+    monitoring_thread = threading.Thread(target=monitor_files, daemon=True)
     monitoring_thread.start()
 
     # Run the Flask application
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-
