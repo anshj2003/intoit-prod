@@ -2034,6 +2034,11 @@ def acrcloud_process_wav_file(bar_id, file_path):
             print(f"No song recognized for file: {file_path}")
     except Exception as e:
         print(f"Error processing WAV file: {e}")
+    finally:
+        # Delete the file after processing
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"File {file_path} has been deleted.")
 
 def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
     try:
@@ -2053,17 +2058,16 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
     except Exception as e:
         print(f"Error inserting song into database: {e}")
 
-def acrcloud_main():
+def acrcloud_main(file_path):
     try:
-        # Simulate incoming file details
-        incoming_signal = "./files/DankDev/19961_0.wav"
-        bar_id = int(incoming_signal.split('_')[0].split('/')[-1])
+        # Extract bar_id from the file name
+        bar_id = int(file_path.split('_')[0].split('/')[-1])
         
         # Process the .wav file to recognize and store the song
-        acrcloud_process_wav_file(bar_id, incoming_signal)
+        acrcloud_process_wav_file(bar_id, file_path)
     except Exception as e:
         print(f"Error in acrcloud_main function: {e}")
-
+        
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
