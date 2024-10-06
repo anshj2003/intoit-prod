@@ -2002,6 +2002,7 @@ def get_latest_version():
 
 # MUSIC RECOGNITION
 
+
 # ACRCloud configuration
 acr_config = {
     'host': 'identify-us-west-2.acrcloud.com',
@@ -2058,16 +2059,22 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
     except Exception as e:
         print(f"Error inserting song into database: {e}")
 
-def acrcloud_main(file_path):
-    try:
-        # Extract bar_id from the file name
-        bar_id = int(file_path.split('_')[0].split('/')[-1])
-        
-        # Process the .wav file to recognize and store the song
-        acrcloud_process_wav_file(bar_id, file_path)
-    except Exception as e:
-        print(f"Error in acrcloud_main function: {e}")
+def monitor_files():
+    while True:
+        base_directory = './files'
+        for bar_id in os.listdir(base_directory):
+            bar_directory = os.path.join(base_directory, bar_id)
+            if os.path.isdir(bar_directory):
+                for file_name in os.listdir(bar_directory):
+                    if file_name.endswith('.wav'):
+                        file_path = os.path.join(bar_directory, file_name)
+                        try:
+                            acrcloud_process_wav_file(bar_id, file_path)
+                        except Exception as e:
+                            print(f"Error processing file {file_path}: {e}")
+        time.sleep(10)
         
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+    monitor_files()
