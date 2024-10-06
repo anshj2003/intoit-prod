@@ -2026,6 +2026,7 @@ def acrcloud_process_wav_file(bar_id, file_path):
         
         # Send request to ACRCloud to recognize the song
         result = acr_recognizer.recognize_by_filebuffer(wav_data, len(wav_data))
+        result = eval(result)  # Convert string result to dictionary
         
         # Check if the song was recognized
         if result and 'metadata' in result and 'music' in result['metadata']:
@@ -2036,14 +2037,14 @@ def acrcloud_process_wav_file(bar_id, file_path):
             # Insert song into the database
             acrcloud_insert_song_to_db(bar_id, song_name, artist_name)
         else:
-            print(f"No song recognized for file: {file_path}")
+            print(f"No song recognized for file: {file_path}", flush=True)
     except Exception as e:
-        print(f"Error processing WAV file: {e}")
+        print(f"Error processing WAV file: {e}", flush=True)
     finally:
         # Delete the file after processing
         if os.path.exists(file_path):
             os.remove(file_path)
-            print(f"File {file_path} has been deleted.")
+            print(f"File {file_path} has been deleted.", flush=True)
 
 def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
     try:
@@ -2059,13 +2060,13 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
         conn.commit()
         cursor.close()
         conn.close()
-        print(f"Inserted song: '{song_name}' by '{artist_name}' for bar id: {bar_id}")
+        print(f"Inserted song: '{song_name}' by '{artist_name}' for bar id: {bar_id}", flush=True)
     except Exception as e:
-        print(f"Error inserting song into database: {e}")
+        print(f"Error inserting song into database: {e}", flush=True)
 
 def monitor_files():
     while True:
-        print("Monitoring files...")  # Debug statement to indicate the function is running
+        print("Monitoring files...", flush=True)  # Debug statement to indicate the function is running
         base_directory = './files'
         for bar_id in os.listdir(base_directory):
             bar_directory = os.path.join(base_directory, bar_id)
@@ -2076,7 +2077,7 @@ def monitor_files():
                         try:
                             acrcloud_process_wav_file(bar_id, file_path)
                         except Exception as e:
-                            print(f"Error processing file {file_path}: {e}")
+                            print(f"Error processing file {file_path}: {e}", flush=True)
         time.sleep(10)
 
 if __name__ == '__main__':
@@ -2084,5 +2085,5 @@ if __name__ == '__main__':
     monitoring_thread = threading.Thread(target=monitor_files, daemon=True)
     monitoring_thread.start()
 
-    # Run the Flask application
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Run the Flask application without the reloader
+    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=False)
