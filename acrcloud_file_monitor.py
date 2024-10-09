@@ -12,6 +12,9 @@ DATABASE = os.getenv('DATABASE')
 DB_USER = os.getenv('DB_USER')
 PASSWORD = os.getenv('PASSWORD')
 
+ACR_ACCESS = os.getenv('ACR_ACCESS')
+ACR_SECRET = os.getenv('ACR_SECRET')
+
 
 
 def get_db_connection():
@@ -26,8 +29,8 @@ def get_db_connection():
 # ACRCloud configuration
 acr_config = {
     'host': 'identify-us-west-2.acrcloud.com',
-    'access_key': 'f6ff5195c687fe2223f552a67b8c1313',
-    'access_secret': '1RkhZAl66HDQAn9cEinYaoNh9n1UgMu4eINjFGGp',
+    'access_key': ACR_ACCESS,
+    'access_secret': ACR_SECRET,
     'timeout': 10  # seconds
 }
 
