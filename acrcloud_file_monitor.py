@@ -36,70 +36,68 @@ acr_config = {
 
 requrl = f"https://{acr_config['host']}/v1/identify"
 
-# Flag to manage 2-minute wait after high score
-wait_for_next_call = False
+# Timestamp to manage 2-minute wait after high score
+next_api_call_time = 0
 
 def acrcloud_process_wav_file(bar_id, file_path):
-    global wait_for_next_call
+    global next_api_call_time
     try:
         # Read .wav file content
         with open(file_path, 'rb') as f:
             wav_data = f.read()
         sample_bytes = os.path.getsize(file_path)
         
+        current_time = time.time()
         # Check if we are in a waiting period before making another API call
-        if wait_for_next_call:
+        if current_time < next_api_call_time:
             print(f"Skipping API call for file: {file_path} due to 2-minute wait period.")
-            return
-        
-        # Prepare the request to ACRCloud
-        http_method = "POST"
-        http_uri = "/v1/identify"
-        data_type = "audio"
-        signature_version = "1"
-        timestamp = str(int(time.time()))
-
-        string_to_sign = f"{http_method}\n{http_uri}\n{acr_config['access_key']}\n{data_type}\n{signature_version}\n{timestamp}"
-        sign = base64.b64encode(hmac.new(acr_config['access_secret'].encode('ascii'), string_to_sign.encode('ascii'), digestmod=hashlib.sha1).digest()).decode('ascii')
-
-        files = [
-            ('sample', (file_path, open(file_path, 'rb'), 'audio/wav'))
-        ]
-        data = {
-            'access_key': acr_config['access_key'],
-            'sample_bytes': sample_bytes,
-            'timestamp': timestamp,
-            'signature': sign,
-            'data_type': data_type,
-            "signature_version": signature_version
-        }
-
-        # Send request to ACRCloud to recognize the song
-        print(f"Making API call to ACRCloud for file: {file_path}")
-        response = requests.post(requrl, files=files, data=data)
-        response.encoding = "utf-8"
-        print(f"API Response Code: {response.status_code}")
-        print(f"API Response: {response.text}")
-        result = response.json()
-        
-        # Check if the song was recognized and the score is greater than 30
-        if result and 'metadata' in result and 'music' in result['metadata']:
-            music_info = result['metadata']['music'][0]
-            score = music_info.get('score', 0)
-            if score > 30:
-                song_name = music_info.get('title', 'Unknown')
-                artist_name = music_info.get('artists', [{}])[0].get('name', 'Unknown')
-                
-                # Insert song into the database if not already present
-                acrcloud_insert_song_to_db(bar_id, song_name, artist_name)
-                print("Waiting for 2 minutes before making the next API call.")
-                wait_for_next_call = True
-                time.sleep(120)  # Wait for 2 minutes before making another API call
-                wait_for_next_call = False
-            else:
-                print(f"Score is less than 30 for file: {file_path}, not adding to database.")
         else:
-            print(f"No song recognized for file: {file_path}")
+            # Prepare the request to ACRCloud
+            http_method = "POST"
+            http_uri = "/v1/identify"
+            data_type = "audio"
+            signature_version = "1"
+            timestamp = str(int(time.time()))
+
+            string_to_sign = f"{http_method}\n{http_uri}\n{acr_config['access_key']}\n{data_type}\n{signature_version}\n{timestamp}"
+            sign = base64.b64encode(hmac.new(acr_config['access_secret'].encode('ascii'), string_to_sign.encode('ascii'), digestmod=hashlib.sha1).digest()).decode('ascii')
+
+            files = [
+                ('sample', (file_path, open(file_path, 'rb'), 'audio/wav'))
+            ]
+            data = {
+                'access_key': acr_config['access_key'],
+                'sample_bytes': sample_bytes,
+                'timestamp': timestamp,
+                'signature': sign,
+                'data_type': data_type,
+                "signature_version": signature_version
+            }
+
+            # Send request to ACRCloud to recognize the song
+            print(f"Making API call to ACRCloud for file: {file_path}")
+            response = requests.post(requrl, files=files, data=data)
+            response.encoding = "utf-8"
+            print(f"API Response Code: {response.status_code}")
+            print(f"API Response: {response.text}")
+            result = response.json()
+            
+            # Check if the song was recognized and the score is greater than 30
+            if result and 'metadata' in result and 'music' in result['metadata']:
+                music_info = result['metadata']['music'][0]
+                score = music_info.get('score', 0)
+                if score > 30:
+                    song_name = music_info.get('title', 'Unknown')
+                    artist_name = music_info.get('artists', [{}])[0].get('name', 'Unknown')
+                    
+                    # Insert song into the database if not already present
+                    acrcloud_insert_song_to_db(bar_id, song_name, artist_name)
+                    print("Waiting for 2 minutes before making the next API call.")
+                    next_api_call_time = current_time + 120  # Set the next allowed API call time
+                else:
+                    print(f"Score is less than 30 for file: {file_path}, not adding to database.")
+            else:
+                print(f"No song recognized for file: {file_path}")
     except Exception as e:
         print(f"Error processing WAV file: {e}")
     finally:
