@@ -5,6 +5,9 @@ import hashlib
 import hmac
 import requests
 import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 HOST = os.getenv('HOST')
