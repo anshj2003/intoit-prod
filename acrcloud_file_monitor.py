@@ -36,12 +36,21 @@ acr_config = {
 
 requrl = f"https://{acr_config['host']}/v1/identify"
 
+# Flag to manage 2-minute wait after high score
+wait_for_next_call = False
+
 def acrcloud_process_wav_file(bar_id, file_path):
+    global wait_for_next_call
     try:
         # Read .wav file content
         with open(file_path, 'rb') as f:
             wav_data = f.read()
         sample_bytes = os.path.getsize(file_path)
+        
+        # Check if we are in a waiting period before making another API call
+        if wait_for_next_call:
+            print(f"Skipping API call for file: {file_path} due to 2-minute wait period.")
+            return
         
         # Prepare the request to ACRCloud
         http_method = "POST"
@@ -84,7 +93,9 @@ def acrcloud_process_wav_file(bar_id, file_path):
                 # Insert song into the database if not already present
                 acrcloud_insert_song_to_db(bar_id, song_name, artist_name)
                 print("Waiting for 2 minutes before making the next API call.")
+                wait_for_next_call = True
                 time.sleep(120)  # Wait for 2 minutes before making another API call
+                wait_for_next_call = False
             else:
                 print(f"Score is less than 30 for file: {file_path}, not adding to database.")
         else:
@@ -92,7 +103,7 @@ def acrcloud_process_wav_file(bar_id, file_path):
     except Exception as e:
         print(f"Error processing WAV file: {e}")
     finally:
-        # Delete the file after processing
+        # Delete the file after processing, regardless of the outcome
         if os.path.exists(file_path):
             os.remove(file_path)
             print(f"File {file_path} has been deleted.")
