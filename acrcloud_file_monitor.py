@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 HOST = os.getenv('HOST')
 DATABASE = os.getenv('DATABASE')
 DB_USER = os.getenv('DB_USER')
@@ -17,8 +16,6 @@ PASSWORD = os.getenv('PASSWORD')
 
 ACR_ACCESS = os.getenv('ACR_ACCESS')
 ACR_SECRET = os.getenv('ACR_SECRET')
-
-
 
 def get_db_connection():
     conn = psycopg2.connect(
@@ -76,14 +73,20 @@ def acrcloud_process_wav_file(bar_id, file_path):
         print(f"API Response: {response.text}")
         result = response.json()
         
-        # Check if the song was recognized
+        # Check if the song was recognized and the score is greater than 30
         if result and 'metadata' in result and 'music' in result['metadata']:
             music_info = result['metadata']['music'][0]
-            song_name = music_info.get('title', 'Unknown')
-            artist_name = music_info.get('artists', [{}])[0].get('name', 'Unknown')
-            
-            # Insert song into the database
-            acrcloud_insert_song_to_db(bar_id, song_name, artist_name)
+            score = music_info.get('score', 0)
+            if score > 30:
+                song_name = music_info.get('title', 'Unknown')
+                artist_name = music_info.get('artists', [{}])[0].get('name', 'Unknown')
+                
+                # Insert song into the database if not already present
+                acrcloud_insert_song_to_db(bar_id, song_name, artist_name)
+                print("Waiting for 2 minutes before making the next API call.")
+                time.sleep(120)  # Wait for 2 minutes before making another API call
+            else:
+                print(f"Score is less than 30 for file: {file_path}, not adding to database.")
         else:
             print(f"No song recognized for file: {file_path}")
     except Exception as e:
@@ -100,15 +103,23 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Insert the song information into the songs table
-        insert_query = 'INSERT INTO songs (bar_id, name, artist) VALUES (%s, %s, %s)'
-        cursor.execute(insert_query, (bar_id, song_name, artist_name))
+        # Check if the song already exists for the given bar
+        check_query = 'SELECT * FROM songs WHERE bar_id = %s AND name = %s AND artist = %s'
+        cursor.execute(check_query, (bar_id, song_name, artist_name))
+        result = cursor.fetchone()
         
-        # Commit the transaction and close the connection
-        conn.commit()
+        if result:
+            print(f"Song '{song_name}' by '{artist_name}' already exists for bar id: {bar_id}, not adding to database.")
+        else:
+            # Insert the song information into the songs table
+            insert_query = 'INSERT INTO songs (bar_id, name, artist) VALUES (%s, %s, %s)'
+            cursor.execute(insert_query, (bar_id, song_name, artist_name))
+            
+            # Commit the transaction and close the connection
+            conn.commit()
+            print(f"Inserted song: '{song_name}' by '{artist_name}' for bar id: {bar_id}")
         cursor.close()
         conn.close()
-        print(f"Inserted song: '{song_name}' by '{artist_name}' for bar id: {bar_id}")
     except Exception as e:
         print(f"Error inserting song into database: {e}")
 
