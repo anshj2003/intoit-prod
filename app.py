@@ -2060,6 +2060,50 @@ def save_like_level():
     return jsonify({'status': 'Like level saved successfully!'}), 200
 
 
+
+@app.route('/get_bars_by_like_level', methods=['POST'])
+def get_bars_by_like_level():
+    data = request.json
+    email = data.get('email')
+    like_level = data.get('like_level')
+
+    if not email or not like_level:
+        return jsonify({'status': 'Email and Like Level are required'}), 400
+
+    # Get DB connection
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Get user ID from email
+    cursor.execute('SELECT id FROM users WHERE email = %s', (email,))
+    user = cursor.fetchone()
+
+    if not user:
+        return jsonify({'status': 'User not found'}), 404
+
+    user_id = user['id']
+
+    # Get bars with the selected like_level
+    cursor.execute(
+        '''
+        SELECT * FROM been_there
+        JOIN bars ON been_there.bar_id = bars.id
+        WHERE been_there.user_id = %s AND been_there.like_level = %s
+        ORDER BY been_there.rating DESC
+        ''',
+        (user_id, like_level)
+    )
+
+    bars = cursor.fetchall()
+
+    # Close connection
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'Bars fetched successfully', 'bars': bars}), 200
+
+
+
 @app.route('/api/latest_version', methods=['GET'])
 def get_latest_version():
     return jsonify({
