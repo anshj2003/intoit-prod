@@ -1990,6 +1990,74 @@ def get_want_to_go_entries():
     
     return jsonify(entries)
 
+# RELATIVE RANKING
+
+@app.route('/save_like_level', methods=['POST'])
+def save_like_level():
+    data = request.json
+    email = data.get('email')
+    bar_id = data.get('bar_id')
+    like_level = data.get('like_level')
+
+    if not email or not bar_id or not like_level:
+        return jsonify({'status': 'Email, Bar ID, and Like Level are required'}), 400
+
+    # Get DB connection
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # Get user ID from email
+    cursor.execute('SELECT id FROM users WHERE email = %s', (email,))
+    user = cursor.fetchone()
+
+    if not user:
+        return jsonify({'status': 'User not found'}), 404
+
+    user_id = user['id']
+
+    # Determine numerical rating based on like_level
+    if like_level == 'liked':
+        rating = 10
+    elif like_level == 'okay':
+        rating = 5
+    elif like_level == 'disliked':
+        rating = 1
+    else:
+        return jsonify({'status': 'Invalid like level'}), 400
+
+    # Check if an entry already exists for this user and bar
+    cursor.execute(
+        'SELECT * FROM been_there WHERE user_id = %s AND bar_id = %s',
+        (user_id, bar_id)
+    )
+    existing_entry = cursor.fetchone()
+
+    if existing_entry:
+        # Update the existing entry
+        cursor.execute(
+            '''
+            UPDATE been_there
+            SET like_level = %s, rating = %s
+            WHERE user_id = %s AND bar_id = %s
+            ''',
+            (like_level, rating, user_id, bar_id)
+        )
+    else:
+        # Insert a new entry
+        cursor.execute(
+            '''
+            INSERT INTO been_there (user_id, bar_id, like_level, rating)
+            VALUES (%s, %s, %s, %s)
+            ''',
+            (user_id, bar_id, like_level, rating)
+        )
+
+    # Commit the transaction
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({'status': 'Like level saved successfully!'}), 200
 
 
 @app.route('/api/latest_version', methods=['GET'])
