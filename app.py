@@ -1998,7 +1998,6 @@ def save_like_level():
     email = data.get('email')
     bar_id = data.get('bar_id')
     like_level = data.get('like_level')
-    provided_rating = data.get('rating')  # New: Accept optional rating from the payload
 
     if not email or not bar_id or not like_level:
         return jsonify({'status': 'Email, Bar ID, and Like Level are required'}), 400
@@ -2016,23 +2015,15 @@ def save_like_level():
 
     user_id = user['id']
 
-    # Determine the rating
-    if provided_rating is not None:
-        # Use the provided rating if it's in the payload
-        try:
-            rating = float(provided_rating)
-        except ValueError:
-            return jsonify({'status': 'Invalid rating value'}), 400
+    # Determine numerical rating based on like_level
+    if like_level == 'liked':
+        rating = 10
+    elif like_level == 'okay':
+        rating = 5
+    elif like_level == 'disliked':
+        rating = 1
     else:
-        # Default rating based on like_level
-        if like_level == 'liked':
-            rating = 10
-        elif like_level == 'okay':
-            rating = 5
-        elif like_level == 'disliked':
-            rating = 1
-        else:
-            return jsonify({'status': 'Invalid like level'}), 400
+        return jsonify({'status': 'Invalid like level'}), 400
 
     # Check if an entry already exists for this user and bar
     cursor.execute(
@@ -2067,7 +2058,6 @@ def save_like_level():
     conn.close()
 
     return jsonify({'status': 'Like level saved successfully!'}), 200
-
 
 
 
