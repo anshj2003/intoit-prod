@@ -1998,9 +1998,10 @@ def save_like_level():
     email = data.get('email')
     bar_id = data.get('bar_id')
     like_level = data.get('like_level')
+    rating = data.get('rating')  # Get the rank passed from the frontend
 
-    if not email or not bar_id or not like_level:
-        return jsonify({'status': 'Email, Bar ID, and Like Level are required'}), 400
+    if not email or not bar_id or not like_level or rating is None:
+        return jsonify({'status': 'Email, Bar ID, Like Level, and Rating are required'}), 400
 
     # Get DB connection
     conn = get_db_connection()
@@ -2014,16 +2015,6 @@ def save_like_level():
         return jsonify({'status': 'User not found'}), 404
 
     user_id = user['id']
-
-    # Determine numerical rating based on like_level
-    if like_level == 'liked':
-        rating = 10
-    elif like_level == 'okay':
-        rating = 5
-    elif like_level == 'disliked':
-        rating = 1
-    else:
-        return jsonify({'status': 'Invalid like level'}), 400
 
     # Check if an entry already exists for this user and bar
     cursor.execute(
@@ -2057,7 +2048,7 @@ def save_like_level():
     cursor.close()
     conn.close()
 
-    return jsonify({'status': 'Like level saved successfully!'}), 200
+    return jsonify({'status': 'Like level and rating saved successfully!'}), 200
 
 
 
