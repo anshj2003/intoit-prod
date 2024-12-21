@@ -2098,8 +2098,8 @@ def get_bars_by_like_level():
 @app.route('/api/latest_version', methods=['GET'])
 def get_latest_version():
     return jsonify({
-        'latest_version': '4',
-        'minimum_supported_version': '3.5',
+        'latest_version': '4.5',
+        'minimum_supported_version': '4',
         'force_update': False  # Set to True if the update is mandatory
     })
 
