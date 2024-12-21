@@ -1627,7 +1627,7 @@ def get_following_been_there():
 
     # Get "Been There" entries for followed users
     query = """
-    SELECT bt.*, u.name as user_name, b.name as bar_name 
+    SELECT bt.id, bt.user_id, bt.bar_id, bt.rating, bt.comments, u.name as user_name, b.name as bar_name 
     FROM been_there bt
     JOIN users u ON bt.user_id = u.id
     JOIN bars b ON bt.bar_id = b.id
