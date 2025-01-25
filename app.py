@@ -2143,8 +2143,8 @@ def validate_invite_code():
 @app.route('/api/latest_version', methods=['GET'])
 def get_latest_version():
     return jsonify({
-        'latest_version': '4.5',
-        'minimum_supported_version': '4',
+        'latest_version': '5.0',
+        'minimum_supported_version': '4.5',
         'force_update': False  # Set to True if the update is mandatory
     })
 
