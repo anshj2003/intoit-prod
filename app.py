@@ -2094,6 +2094,51 @@ def get_bars_by_like_level():
     return jsonify({'status': 'Bars fetched successfully', 'bars': bars}), 200
 
 
+@app.route('/validate_invite_code', methods=['POST'])
+def validate_invite_code():
+    data = request.json
+    invite_code = data.get('invite_code')
+
+    if not invite_code:
+        return jsonify({"status": "error", "message": "Invite code is required"}), 400
+
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Check if the invite code exists
+        cur.execute("""
+            SELECT code, expired, amount_used 
+            FROM invite_codes 
+            WHERE code = %s
+        """, (invite_code,))
+        result = cur.fetchone()
+
+        if not result:
+            return jsonify({"status": "error", "message": "Invalid invite code"}), 404
+
+        code, expired, amount_used = result["code"], result["expired"], result["amount_used"]
+
+        if expired:
+            return jsonify({"status": "error", "message": "Invite code is expired"}), 400
+
+        # Increment the usage count
+        cur.execute("""
+            UPDATE invite_codes
+            SET amount_used = amount_used + 1
+            WHERE code = %s
+        """, (code,))
+        conn.commit()
+
+        cur.close()
+        conn.close()
+
+        return jsonify({"status": "success", "message": "Invite code validated successfully"}), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 
 @app.route('/api/latest_version', methods=['GET'])
 def get_latest_version():
