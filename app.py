@@ -177,22 +177,23 @@ def filter_bars():
     vibes         = data.get('vibes', [])             # e.g. ["Upscale","Loungey"]
     neighborhoods = data.get('neighborhoods', [])     # e.g. ["SoHo"]
 
-    # Base SQL
-    query = """
-    SELECT b.*
-    FROM bars b
-    WHERE (%s = '{}' OR b.price_signs = ANY(%s))
-    """
-    params = [prices, prices]
+    # Build simplified SQL filters
+    query = "SELECT b.* FROM bars b WHERE 1=1"
+    params = []
+
+    # Price filter
+    if prices:
+        query += " AND b.price_signs = ANY(%s)"
+        params.append(prices)
 
     # Genre filter (array overlap)
     if genres:
-        query += " AND string_to_array(trim(b.music_genres, '{}'), ',') && %s::text[]"
+        query += " AND b.music_genres && %s"
         params.append(genres)
 
     # Vibe filter (array overlap)
     if vibes:
-        query += " AND string_to_array(trim(b.club_vibes, '{}'), ',') && %s::text[]"
+        query += " AND b.club_vibes && %s"
         params.append(vibes)
 
     # Neighborhood filter
@@ -200,6 +201,7 @@ def filter_bars():
         query += " AND b.neighborhood = ANY(%s)"
         params.append(neighborhoods)
 
+    # Final ordering
     query += " ORDER BY b.name"
 
     conn = get_db_connection()
