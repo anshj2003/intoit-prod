@@ -164,7 +164,59 @@ def ai_search():
 
 
 
+# FILTER FORM THING
 
+@app.route('/api/filter_bars', methods=['POST'])
+def filter_bars():
+    data = request.json
+    prices        = data.get('prices', [])            # e.g. ["$$","$$$"]
+    genres        = data.get('genres', [])            # e.g. ["Latin/Reggaeton","Disco/Funk"]
+    vibes         = data.get('vibes', [])             # e.g. ["Upscale","Loungey"]
+    neighborhoods = data.get('neighborhoods', [])     # e.g. ["SoHo"]
+
+    # Base SQL
+    query = """
+    SELECT b.*
+    FROM bars b
+    WHERE (%s = '{}' OR b.price_signs = ANY(%s))
+    """
+    params = [prices, prices]
+
+    # Genre filter (array overlap)
+    if genres:
+        query += " AND b.music_genres && %s"
+        params.append(genres)
+
+    # Vibe filter (array overlap)
+    if vibes:
+        query += " AND b.club_vibes && %s"
+        params.append(vibes)
+
+    # Neighborhood filter
+    if neighborhoods:
+        query += " AND b.neighborhood = ANY(%s)"
+        params.append(neighborhoods)
+
+    query += " ORDER BY b.name"
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(query, params)
+    bars = cursor.fetchall()
+
+    # Attach songs as before
+    for bar in bars:
+        cursor.execute("""
+            SELECT s.id::text, s.name, s.artist, s.album_art, s.spotify_url
+            FROM songs s
+            JOIN playlists p ON s.playlist_id = p.id
+            WHERE p.bar_id = %s
+        """, (bar['id'],))
+        bar['songs'] = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+    return jsonify(bars)
 
     
 
