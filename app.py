@@ -189,15 +189,17 @@ def filter_bars():
         query += f" AND neighborhood IN ({placeholders})"
         params.extend(neighborhoods)
 
-    # Music‐genre filter (array‐overlap: any one match)
+    # Music-genre filter (match any one)
     if genres:
-        query += " AND music_genres && %s"
-        params.append(genres)
+        genre_conditions = " OR ".join("%s = ANY(music_genres)" for _ in genres)
+        query += f" AND ({genre_conditions})"
+        params.extend(genres)
 
-    # Vibes filter (array‐overlap: any one match)
+    # Vibes filter (match any one)
     if vibes:
-        query += " AND club_vibes && %s"
-        params.append(vibes)
+        vibe_conditions = " OR ".join("%s = ANY(club_vibes)" for _ in vibes)
+        query += f" AND ({vibe_conditions})"
+        params.extend(vibes)
 
     # Final ordering
     query += " ORDER BY name"
