@@ -166,8 +166,11 @@ def ai_search():
 
 # FILTER FORM THING
 
-@app.route('/api/filter_bars', methods=['POST'])
+@app.route('/api/filter_bars', methods=['GET', 'POST'])
 def filter_bars():
+    if request.method == 'GET':
+        # Echo back empty default or parse query parameters similarly
+        return jsonify([]), 200
     data = request.json
     prices        = data.get('prices', [])            # e.g. ["$$","$$$"]
     genres        = data.get('genres', [])            # e.g. ["Latin/Reggaeton","Disco/Funk"]
