@@ -164,66 +164,51 @@ def ai_search():
 
 
 
-# FILTER FORM THING
-
-@app.route('/api/filter_bars', methods=['GET', 'POST'])
+@app.route('/api/filter_bars', methods=['POST'])
 def filter_bars():
-    if request.method == 'GET':
-        # Echo back empty default or parse query parameters similarly
-        return jsonify([]), 200
-    data = request.json
-    prices        = data.get('prices', [])            # e.g. ["$$","$$$"]
-    genres        = data.get('genres', [])            # e.g. ["Latin/Reggaeton","Disco/Funk"]
-    vibes         = data.get('vibes', [])             # e.g. ["Upscale","Loungey"]
-    neighborhoods = data.get('neighborhoods', [])     # e.g. ["SoHo"]
+    data = request.json or {}
+    prices        = data.get('prices', [])            
+    genres        = data.get('genres', [])            
+    vibes         = data.get('vibes', [])             
+    neighborhoods = data.get('neighborhoods', [])     
 
-    # Build simplified SQL filters
-    query = "SELECT b.* FROM bars b WHERE 1=1"
+    # Start query
+    query = "SELECT * FROM bars WHERE 1=1"
     params = []
 
     # Price filter
     if prices:
-        query += " AND b.price_signs = ANY(%s)"
-        params.append(prices)
+        placeholders = ','.join(['%s'] * len(prices))
+        query += f" AND price_signs IN ({placeholders})"
+        params.extend(prices)
 
-    # Genre filter (array overlap)
+    # Genre filter
     if genres:
-        query += " AND b.music_genres && %s"
-        params.append(genres)
+        for g in genres:
+            query += " AND %s = ANY(music_genres)"
+            params.append(g)
 
-    # Vibe filter (array overlap)
+    # Vibe filter
     if vibes:
-        query += " AND b.club_vibes && %s"
-        params.append(vibes)
+        for v in vibes:
+            query += " AND %s = ANY(club_vibes)"
+            params.append(v)
 
     # Neighborhood filter
     if neighborhoods:
-        query += " AND b.neighborhood = ANY(%s)"
-        params.append(neighborhoods)
+        placeholders = ','.join(['%s'] * len(neighborhoods))
+        query += f" AND neighborhood IN ({placeholders})"
+        params.extend(neighborhoods)
 
-    # Final ordering
-    query += " ORDER BY b.name"
-
+    # Execute
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(query, params)
     bars = cursor.fetchall()
-
-    # Attach songs as before
-    for bar in bars:
-        cursor.execute("""
-            SELECT s.id::text, s.name, s.artist, s.album_art, s.spotify_url
-            FROM songs s
-            JOIN playlists p ON s.playlist_id = p.id
-            WHERE p.bar_id = %s
-        """, (bar['id'],))
-        bar['songs'] = cursor.fetchall()
-
     cursor.close()
     conn.close()
-    return jsonify(bars)
 
-    
+    return jsonify(bars), 200
 
 # SUBMIT NEARBY FORM
 
