@@ -187,12 +187,12 @@ def filter_bars():
 
     # Genre filter (array overlap)
     if genres:
-        query += " AND b.music_genres && %s::text[]"
+        query += " AND string_to_array(trim(b.music_genres, '{}'), ',') && %s::text[]"
         params.append(genres)
 
     # Vibe filter (array overlap)
     if vibes:
-        query += " AND b.club_vibes && %s::text[]"
+        query += " AND string_to_array(trim(b.club_vibes, '{}'), ',') && %s::text[]"
         params.append(vibes)
 
     # Neighborhood filter
