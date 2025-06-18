@@ -164,43 +164,45 @@ def ai_search():
 
 
 
+
 @app.route('/api/filter_bars', methods=['POST'])
 def filter_bars():
     data = request.json or {}
-    prices        = data.get('prices', [])            
-    genres        = data.get('genres', [])            
-    vibes         = data.get('vibes', [])             
-    neighborhoods = data.get('neighborhoods', [])     
+    prices        = data.get('prices', [])            # e.g. ["$$", "$$$"]
+    genres        = data.get('genres', [])            # e.g. ["Latin/Reggaeton","Disco/Funk"]
+    vibes         = data.get('vibes', [])             # e.g. ["Upscale","Loungey"]
+    neighborhoods = data.get('neighborhoods', [])     # e.g. ["SoHo","East Village"]
 
-    # Start query
+    # Build base query
     query = "SELECT * FROM bars WHERE 1=1"
     params = []
 
-    # Price filter
+    # Price filter (any one match)
     if prices:
         placeholders = ','.join(['%s'] * len(prices))
         query += f" AND price_signs IN ({placeholders})"
         params.extend(prices)
 
-    # Genre filter
-    if genres:
-        for g in genres:
-            query += " AND %s = ANY(music_genres)"
-            params.append(g)
-
-    # Vibe filter
-    if vibes:
-        for v in vibes:
-            query += " AND %s = ANY(club_vibes)"
-            params.append(v)
-
-    # Neighborhood filter
+    # Neighborhood filter (any one match)
     if neighborhoods:
         placeholders = ','.join(['%s'] * len(neighborhoods))
         query += f" AND neighborhood IN ({placeholders})"
         params.extend(neighborhoods)
 
-    # Execute
+    # Music‐genre filter (array‐overlap: any one match)
+    if genres:
+        query += " AND music_genres && %s"
+        params.append(genres)
+
+    # Vibes filter (array‐overlap: any one match)
+    if vibes:
+        query += " AND club_vibes && %s"
+        params.append(vibes)
+
+    # Final ordering
+    query += " ORDER BY name"
+
+    # Execute and fetch
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     cursor.execute(query, params)
