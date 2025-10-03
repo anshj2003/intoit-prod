@@ -1,5 +1,5 @@
 from flask import Flask, request, send_from_directory, jsonify, render_template, abort
-import os, re, datetime
+import os, re, datetime, base64
 
 app = Flask(__name__)
 PORT = 3000
@@ -56,50 +56,66 @@ def cleanup_files():
 @app.route('/file', methods=['POST'])
 def upload_file():
     """
-    Expects:
-      - Binary data in request.data.
-      - Required header: Content-Type and Content-Disposition (with filename present, although we ignore the filename).
-      - A required header X-Device-Name (must be alphanumeric, up to 10 characters).
-      
-    Saves the file as deviceName_TIMESTAMP.wav.
+    Accepts either:
+      - multipart/form-data with a file part (common field names: file/audio/sample/upload/data)
+      - raw bytes with Content-Type: audio/wav or application/octet-stream
+    Saves as <device>_<YYYYMMDD_HHMMSS>.wav
     """
-    print('Received POST request to /file')
-    print(request.headers)
-    
-    # Check required headers for file content
-    if 'Content-Type' not in request.headers or 'Content-Disposition' not in request.headers:
-        print('Missing Content-Type or Content-Disposition header')
-        return 'Missing headers', 400
+    print('Received POST /file')
+    print('Headers:', dict(request.headers))
 
-    # Check for device name header
+    # Validate/sanitize device header
     device_name = request.headers.get('X-Device-Name', '').strip()
-    if not device_name or not DEVICE_REGEX.fullmatch(device_name):
-        print('Invalid or missing device name')
-        return 'Invalid or missing device name', 400
+    if not device_name or not re.match(r'^[a-zA-Z0-9-]{1,32}$', device_name):
+        return "Missing or invalid X-Device-Name", 400
 
-    # Validate Content-Disposition for a filename (even though we ignore it)
-    content_disposition = request.headers.get('Content-Disposition')
-    if 'filename="' not in content_disposition:
-        print('Filename not found in Content-Disposition header')
-        return 'Filename missing', 400
+    # Extract audio bytes
+    audio_bytes = None
 
-    # Generate machine-friendly timestamp for filename
-    now = datetime.datetime.now()
-    machine_ts = now.strftime("%Y%m%d_%H%M%S")
-    new_filename = f"{device_name}_{machine_ts}.wav"
+    # 1) multipart/form-data → use request.files
+    if request.mimetype and request.mimetype.startswith('multipart/form-data'):
+        fileobj = None
+        # try common field names in priority order
+        for key in ('file', 'audio', 'sample', 'upload', 'data'):
+            if key in request.files:
+                fileobj = request.files[key]
+                break
+        # fallback to “first file” if any
+        if not fileobj and request.files:
+            fileobj = next(iter(request.files.values()))
+        if not fileobj:
+            return "No file part found in multipart/form-data", 400
+        audio_bytes = fileobj.read()
+
+    else:
+        # 2) raw bytes
+        ctype = (request.mimetype or '').lower()
+        if ctype in ('audio/wav', 'audio/x-wav', 'application/octet-stream', ''):
+            audio_bytes = request.get_data()
+        elif ctype == 'text/plain':  # some devices send base64 in text/plain
+            try:
+                audio_bytes = base64.b64decode(request.get_data(), validate=True)
+            except Exception:
+                return "Unsupported payload (plain text not base64)", 415
+        else:
+            return f"Unsupported Content-Type: {request.mimetype}", 415
+
+    # Basic sanity: RIFF/WAVE header (don’t be strict, just warn)
+    if not (len(audio_bytes) > 12 and audio_bytes[:4] == b'RIFF' and audio_bytes[8:12] == b'WAVE'):
+        print("Warning: uploaded payload does not start with RIFF/WAVE. Check device upload format.")
+        # You can return 400 here instead if you want to enforce strict WAV uploads.
+        # return "Payload is not a valid WAV file", 400
+
+    # Build filename and save
+    now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    new_filename = f"{device_name}_{now}.wav"
     file_path = os.path.join(UPLOAD_DIR, new_filename)
-    print(f"Saving file as: {file_path}")
-    
-    try:
-        with open(file_path, 'wb') as f:
-            f.write(request.data)
-        print(f"File saved successfully: {new_filename}")
-        # Run cleanup after successful upload
-        cleanup_files()
-        return new_filename, 201
-    except Exception as e:
-        print('Error saving file:', e)
-        return 'Failed to save file', 500
+    with open(file_path, 'wb') as f:
+        f.write(audio_bytes)
+    print(f"Saved {new_filename} ({len(audio_bytes)} bytes)")
+
+    cleanup_files()
+    return new_filename, 201
 
 @app.route('/files', methods=['GET'])
 def list_files():
