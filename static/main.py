@@ -3,11 +3,11 @@ import os, re, datetime, base64
 
 app = Flask(__name__)
 PORT = 3000
-UPLOAD_DIR = os.path.join(os.getcwd(), 'uploads')
+UPLOAD_DIR = os.path.join(os.getcwd(), 'static', 'uploads')
 
 # Ensure upload directory exists
 if not os.path.exists(UPLOAD_DIR):
-    print('Creating uploads directory')
+    print('Creating static/uploads directory')
     os.makedirs(UPLOAD_DIR)
 
 # Regex for valid filenames: device (alphanumeric up to 10) + "_" + YYYYMMDD_HHMMSS + ".wav"
