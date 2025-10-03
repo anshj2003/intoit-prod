@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="flex">
+        <!-- Sidebar File List -->
+        <div class="w-1/3 bg-white p-4 shadow-lg">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold">Uploaded Files</h2>
+            </div>
+            <div id="fileList" class="mt-4"></div>
+        </div>
+
+        <!-- Right side: Audio Player -->
+        <div class="w-2/3 bg-white shadow p-4">
+            <h2 class="text-xl font-semibold mb-2">Now Playing</h2>
+            <audio id="audioPlayer" controls class="w-full" src="">
+            Your browser does not support the audio element.
+            </audio>
+        </div>
+    </div>
+
+    
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
