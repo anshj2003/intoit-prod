@@ -7,6 +7,7 @@ import hmac
 import requests
 import psycopg2
 from dotenv import load_dotenv
+import unicodedata
 
 load_dotenv()
 
@@ -46,14 +47,34 @@ next_api_call_time_by_bar = {}
 # Regex for filenames
 FILENAME_RE = re.compile(r'^(\d+)_\d{8}_\d{6}\.wav$')
 
+# -----------------------------
+# Spotify helpers (album art)
+# -----------------------------
+
+def _normalize_text(s: str) -> str:
+    """Normalize smart quotes/dashes and strip odd control chars to improve search hit-rate."""
+    if not s:
+        return s
+    # Replace common typography with ASCII
+    s = s.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+    s = s.replace("–", "-").replace("—", "-")
+    # Normalize unicode & strip control chars
+    s = unicodedata.normalize("NFKC", s)
+    # Keep readable chars only
+    s = "".join(ch for ch in s if ch.isprintable())
+    return s.strip()
 
 def get_spotify_token():
     """Fetch a fresh Spotify API token using Client Credentials flow."""
+    if not (SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET):
+        print("Spotify creds missing; cannot fetch album art.")
+        return None
     try:
         resp = requests.post(
             "https://accounts.spotify.com/api/token",
             data={"grant_type": "client_credentials"},
             auth=(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET),
+            timeout=8,
         )
         resp.raise_for_status()
         return resp.json().get("access_token")
@@ -61,31 +82,72 @@ def get_spotify_token():
         print(f"Error getting Spotify token: {e}")
         return None
 
-
-def get_album_art_spotify(song_name, artist_name):
-    """Search Spotify for album art using song + artist."""
-    token = get_spotify_token()
-    if not token:
-        return None
+def _spotify_search(token, q_params, type_, limit=1):
     try:
-        query = f"track:{song_name} artist:{artist_name}"
         resp = requests.get(
             "https://api.spotify.com/v1/search",
             headers={"Authorization": f"Bearer {token}"},
-            params={"q": query, "type": "track", "limit": 1},
+            params={"q": q_params, "type": type_, "limit": limit, "market": "US"},
+            timeout=8,
         )
-        resp.raise_for_status()
-        data = resp.json()
-        items = data.get("tracks", {}).get("items", [])
-        if items:
-            album_images = items[0]["album"]["images"]
-            if album_images:
-                # Return the first (largest) image
-                return album_images[0]["url"]
+        if resp.status_code != 200:
+            print(f"Spotify search {type_} HTTP {resp.status_code}: {resp.text[:200]}")
+            return None
+        return resp.json()
     except Exception as e:
-        print(f"Error fetching album art: {e}")
+        print(f"Spotify search error: {e}")
+        return None
+
+def get_album_art_spotify(song_name: str, artist_name: str, album_name: str = None):
+    """Search Spotify for album art using progressively looser strategies. Returns URL or None."""
+    token = get_spotify_token()
+    if not token:
+        return None
+
+    song = _normalize_text(song_name or "")
+    artist = _normalize_text(artist_name or "")
+    album = _normalize_text(album_name or "")
+
+    # Strategy 1: strict track+artist with fielded query
+    if song and artist:
+        q1 = f'track:"{song}" artist:"{artist}"'
+        data = _spotify_search(token, q1, "track", limit=1)
+        if data:
+            items = data.get("tracks", {}).get("items", [])
+            if items and items[0].get("album", {}).get("images"):
+                return items[0]["album"]["images"][0]["url"]
+
+    # Strategy 2: relaxed track+artist (no quotes/fields)
+    if song and artist:
+        q2 = f"{song} {artist}"
+        data = _spotify_search(token, q2, "track", limit=1)
+        if data:
+            items = data.get("tracks", {}).get("items", [])
+            if items and items[0].get("album", {}).get("images"):
+                return items[0]["album"]["images"][0]["url"]
+
+    # Strategy 3: album search if we have album name from ACR
+    if album and artist:
+        q3 = f'album:"{album}" artist:"{artist}"'
+        data = _spotify_search(token, q3, "album", limit=1)
+        if data:
+            items = data.get("albums", {}).get("items", [])
+            if items and items[0].get("images"):
+                return items[0]["images"][0]["url"]
+
+    # Strategy 4: relaxed album search
+    if album and artist:
+        q4 = f"{album} {artist}"
+        data = _spotify_search(token, q4, "album", limit=1)
+        if data:
+            items = data.get("albums", {}).get("items", [])
+            if items and items[0].get("images"):
+                return items[0]["images"][0]["url"]
+
+    print(f"No album art found for: song='{song_name}' artist='{artist_name}' album='{album_name}'")
     return None
 
+# -----------------------------
 
 def acrcloud_process_wav_file(bar_id, file_path):
     try:
@@ -135,8 +197,10 @@ def acrcloud_process_wav_file(bar_id, file_path):
                     song_name = music_info.get('title', 'Unknown')
                     artists = music_info.get('artists') or []
                     artist_name = (artists[0].get('name') if artists and isinstance(artists[0], dict) else 'Unknown')
+                    album_name = (music_info.get('album') or {}).get('name') or None
 
-                    album_art_url = get_album_art_spotify(song_name, artist_name)
+                    # Try to fetch album art (Spotify only)
+                    album_art_url = get_album_art_spotify(song_name, artist_name, album_name)
 
                     acrcloud_insert_song_to_db(bar_id, song_name, artist_name, album_art_url)
                     print(f"Cooldown 2 min for bar {bar_id}.")
@@ -154,7 +218,6 @@ def acrcloud_process_wav_file(bar_id, file_path):
                 print(f"Deleted {file_path}")
         except Exception as e:
             print(f"Warning: could not delete {file_path}: {e}")
-
 
 def acrcloud_insert_song_to_db(bar_id, song_name, artist_name, album_art_url):
     try:
@@ -180,7 +243,6 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name, album_art_url):
             conn.close()
         except Exception:
             pass
-
 
 def monitor_files():
     base_directory = './static/uploads'
@@ -219,7 +281,6 @@ def monitor_files():
             print(f"Monitor loop error: {loop_err}")
 
         time.sleep(10)
-
 
 if __name__ == '__main__':
     monitor_files()
