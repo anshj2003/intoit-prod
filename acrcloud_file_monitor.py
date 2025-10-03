@@ -29,6 +29,10 @@ def get_db_connection():
         user=DB_USER,
         password=PASSWORD
     )
+    try:
+        conn.set_client_encoding('UTF8')
+    except Exception:
+        pass
     return conn
 
 # ACRCloud configuration
