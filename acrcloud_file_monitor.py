@@ -37,14 +37,13 @@ acr_config = {
 
 requrl = f"https://{acr_config['host']}/v1/identify"
 
-# Timestamp to manage 2-minute wait after high score
-next_api_call_time = 0
+# Per-bar cooldown timestamps (replaces global single cooldown)
+next_api_call_time_by_bar = {}
 
 # Match: 17882_20251003_013018.wav  -> bar_id = 17882
 FILENAME_RE = re.compile(r'^(\d+)_\d{8}_\d{6}\.wav$')
 
 def acrcloud_process_wav_file(bar_id, file_path):
-    global next_api_call_time
     try:
         # Read .wav file content
         with open(file_path, 'rb') as f:
@@ -52,9 +51,10 @@ def acrcloud_process_wav_file(bar_id, file_path):
         sample_bytes = os.path.getsize(file_path)
 
         current_time = time.time()
-        # Respect the 2-minute cool-down after a high-score ID
-        if current_time < next_api_call_time:
-            print(f"Skipping API call for file: {file_path} due to 2-minute wait period.")
+        # Respect the 2-minute cool-down AFTER a high-score ID — per bar
+        next_time = next_api_call_time_by_bar.get(bar_id, 0)
+        if current_time < next_time:
+            print(f"Skipping API call for file: {file_path} due to 2-minute wait period for bar {bar_id}.")
         else:
             # Prepare the request to ACRCloud
             http_method = "POST"
@@ -104,8 +104,8 @@ def acrcloud_process_wav_file(bar_id, file_path):
 
                     # Insert song into the database if not already present
                     acrcloud_insert_song_to_db(bar_id, song_name, artist_name)
-                    print("Waiting for 2 minutes before making the next API call.")
-                    next_api_call_time = current_time + 120  # Set the next allowed API call time
+                    print(f"Waiting for 2 minutes before making the next API call for bar {bar_id}.")
+                    next_api_call_time_by_bar[bar_id] = current_time + 120  # per-bar cooldown
                 else:
                     print(f"Score < 30 for file: {file_path}, not adding to database.")
             else:
@@ -113,7 +113,7 @@ def acrcloud_process_wav_file(bar_id, file_path):
     except Exception as e:
         print(f"Error processing WAV file: {e}")
     finally:
-        # Delete the file after processing, regardless of the outcome
+        # Delete the file after processing or skipping, matching your current behavior
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -148,7 +148,7 @@ def acrcloud_insert_song_to_db(bar_id, song_name, artist_name):
             pass
 
 def monitor_files():
-    base_directory = './static/uploads'  # UPDATED: monitor static/uploads
+    base_directory = './static/uploads'  # monitor static/uploads
     # Ensure directory exists
     os.makedirs(base_directory, exist_ok=True)
 
